@@ -1,10 +1,9 @@
 """
 Test application to verify LED Blinky module with foundation
 """
-import sys
-sys.path.append('/src')
-from foundation.core import PicowidFoundation
-from modules.led_blinky import LEDBlinkyModule
+from foundation_core import PicowidFoundation
+from led_blinky import LEDBlinkyModule
+
 from adafruit_httpserver import Request, Response
 
 def main():
