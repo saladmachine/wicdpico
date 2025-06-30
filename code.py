@@ -4,6 +4,7 @@ Test application to verify LED Control module with foundation
 from foundation_core import PicowidFoundation
 from led_control import LEDControlModule
 from file_manager import FileManagerModule
+from console_monitor_minimal import ConsoleMonitorModule
 from adafruit_httpserver import Request, Response
 
 def main():
@@ -23,6 +24,10 @@ def main():
     # Create and register File Manager module
     file_manager_module = FileManagerModule(foundation)
     foundation.register_module("file_manager", file_manager_module)
+
+    # Create and register Console Monitor module
+    console_module = ConsoleMonitorModule(foundation)
+    foundation.register_module("console", console_module)
 
     @foundation.server.route("/", methods=['GET'])
     def handle_root(request: Request):
