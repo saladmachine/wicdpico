@@ -6,13 +6,62 @@ Picowicd transforms your Raspberry Pi Pico W into a modular, web-based instrumen
 
 Whether you're monitoring greenhouse conditions, controlling irrigation systems, or developing new CEA instrumentation, picowicd's modular architecture allows you to rapidly prototype and deploy robust control systems that can be shared and reused across research projects.
 
+## **Design Philosophy: "Lego Blocks for Embedded Interfaces"**
+
+Picowicd is designed as a **modular dashboard system** where functional components can be "bolted in" to create custom embedded instruments. Rather than building monolithic applications, developers can:
+
+- **Select pre-built functional modules** (LED control, file management, logging, sensors)
+- **Configure each module** for specific needs
+- **Assemble them** into a unified dashboard
+- **Deploy as a complete** embedded instrument
+
+This is **code-based assembly** requiring developer knowledge, but with standardized interfaces that make integration predictable and reliable.
+
 ## **Architecture**
 
-**Modular Design**: Built on a robust foundation system that allows easy addition of sensor modules, control interfaces, and monitoring tools. Each module is self-contained and reusable across different CEA instrumentation projects.
+### **Three-Layer Design**
 
-* **Foundation**: Robust core system providing WiFi, web server, and module management
-* **Modules**: Standardized components for specific functionality (sensors, actuators, monitoring)
-* **Widgets**: Dashboard UI components (buttons, sliders, gauges) that integrate seamlessly
+**Foundation Layer (`foundation_core.py`)**
+- **WiFi AP management** - Creates hotspot, handles network config
+- **Web server framework** - Routes, templates, response handling  
+- **Module registration system** - Central registry for all components
+- **Shared services** - Logging, configuration, utilities
+
+**Module Layer (Standardized Components)**
+Each module follows the `PicowidModule` base class pattern:
+- **Self-contained functionality** - LED control, file management, sensor monitoring
+- **Standard interfaces** - Routes, dashboard integration, configuration
+- **Configurable parameters** - Exposed at top of file for easy customization
+- **Optional logging integration** - Can feed central log and/or display local output
+
+**Template/UI Layer (`foundation_templates.py`)**
+- **Responsive CSS framework** - Mobile-friendly, consistent styling
+- **Page rendering system** - Unified layout with module content injection
+- **Dashboard composition** - Automatic assembly of registered modules
+
+### **Dual-Level Logging System**
+
+**Local Logs**: Function-specific output displayed adjacent to controls
+- Temperature readings next to sensor controls
+- LED status next to LED buttons  
+- File operations next to file manager
+
+**Master Log**: Central system log showing all activity
+- Foundation-level events (WiFi status, errors)
+- Cross-module system events
+- Debug output for troubleshooting
+
+### **Configuration Philosophy**
+
+**Hardcoded** (in module files):
+- Buffer sizes, polling intervals, UI layout parameters
+- Placed at top of file under imports for easy access
+- Developer-level configuration requiring code changes
+
+**User Configurable** (via `settings.toml`):
+- Units (F/C), date formats, network credentials  
+- Runtime behavior that end-users might change
+- Validated with graceful fallbacks
 
 ## **Features**
 
@@ -70,8 +119,8 @@ Whether you're monitoring greenhouse conditions, controlling irrigation systems,
    * `module_base.py` (base class for modules)
    * Module files (`led_control.py`, `file_manager.py`, etc.)
    * `foundation_templates.py` (UI templates)
-   * `config.py` (configuration)
-4. **Configure Settings** in `config.py` for your WiFi and application needs
+   * `settings.toml` (configuration)
+4. **Configure Settings** in `settings.toml` for your WiFi and application needs
 5. **Power Cycle** to start the system
 
 ## **Usage**
@@ -88,17 +137,31 @@ Whether you're monitoring greenhouse conditions, controlling irrigation systems,
 from module_base import PicowidModule
 
 class MySensorModule(PicowidModule):
+    # === CONFIGURATION PARAMETERS ===
+    SENSOR_POLL_INTERVAL = 1.0      # seconds
+    TEMPERATURE_UNITS = "C"         # C or F
+    LOG_SENSOR_EVENTS = True        # show in local log
+    # === END CONFIGURATION ===
+    
     def __init__(self, foundation):
         super().__init__(foundation)
         # Initialize your sensor hardware
         
     def register_routes(self, server):
-        # Add web endpoints for your sensor
-        pass
+        @server.route("/sensor_data", methods=['GET'])
+        def get_sensor_data(request):
+            # Handle sensor data requests
+            pass
         
     def get_dashboard_html(self):
         # Return HTML for dashboard integration
-        return "<div>My Sensor Controls</div>"
+        return '''
+        <div class="module">
+            <h3>My Sensor</h3>
+            <p>Temperature: <span id="temp">--</span>°C</p>
+            <button onclick="refreshSensor()">Refresh</button>
+        </div>
+        '''
         
     def update(self):
         # Called from main loop for real-time updates
@@ -129,11 +192,19 @@ Modules have access to foundation services:
 * `self.foundation.server` - Web server for custom routes
 * `self.foundation.templates` - UI template system
 
+### **Creating New Modules**
+
+1. Inherit from `PicowidModule` base class
+2. Define configuration parameters at top of file
+3. Implement required methods: `register_routes()`, `get_dashboard_html()`
+4. Add to main application via `foundation.register_module()`
+5. Test in isolation, then in multi-module configuration
+
 ## **Configuration**
 
-### **config.py Settings**
+### **settings.toml Settings**
 
-```python
+```toml
 # Wi-Fi hotspot configuration
 WIFI_SSID = "Picowide"
 WIFI_PASSWORD = "simpletest"
@@ -152,6 +223,35 @@ Picowicd features robust error handling:
 * **Corrupted settings:** Individual fallback per setting
 * **Network issues:** Automatic retry with default credentials
 * **Module errors:** Graceful degradation without system failure
+
+## **Real-World Application Examples**
+
+### **Multi-Function Environmental Monitor**
+**Assembly**:
+- **Sensor Module**: Displays current readings, controls sampling rate
+- **Log Module**: Shows timestamped sensor data, scrollable history  
+- **Storage Module**: Manages data files, export functionality
+- **Config Module**: Set F/C units, date formats, thresholds
+
+**User Experience**: 
+- Set 1-minute logging interval
+- Walk away for an hour  
+- Return to scroll through timestamped log entries
+- Future: Add graphing module for visualization
+
+### **IoT Device Manager**
+**Assembly**:
+- **Device Control Module**: Turn outputs on/off
+- **Network Module**: WiFi scanning, connection management
+- **Monitoring Module**: Live system status, resource usage
+- **Log Module**: Real-time event stream
+
+## **Planned Module Types**
+- **Sensor modules**: Temperature, humidity, pressure, motion
+- **Communication modules**: MQTT, HTTP client, serial protocols  
+- **Storage modules**: SD card, cloud sync, data export
+- **Control modules**: PWM, servo, stepper motor control
+- **Visualization modules**: Real-time graphs, gauges, charts
 
 ## **Applications**
 
@@ -175,6 +275,15 @@ Picowicd features robust error handling:
 * **Power:** 3.3V operation, 5V tolerant inputs
 * **I2C Support:** Multiple sensor/actuator connections
 * **Web Interface:** Responsive design for mobile/desktop
+
+## **Success Metrics**
+
+A successful Picowicd deployment should feel like:
+- **Assembling electronic components** - predictable interfaces, known behavior
+- **Professional embedded tools** - reliable, responsive, purpose-built
+- **Modular synthesizers** - standardized connections enabling creative combinations
+
+The architecture succeeds when developers can rapidly prototype embedded instruments by selecting and configuring modules rather than building from scratch.
 
 ## **Contributing**
 
