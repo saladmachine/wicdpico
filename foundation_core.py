@@ -1,6 +1,6 @@
 """
-PicowidFoundation - Bulletproof base system for all picowicd applications
-Extracted from production picowide system
+PicowidFoundation - Robust base system for all picowicd applications
+Extracted from production picowicd system
 """
 import wifi
 import socketpool
@@ -11,8 +11,8 @@ import gc
 from foundation_templates import TemplateSystem
 
 class Config:
-    """Bulletproof configuration with guaranteed defaults"""
-    WIFI_SSID = "Picowide"
+    """Robust configuration with guaranteed defaults"""
+    WIFI_SSID = "Picowicd"
     WIFI_PASSWORD = "simpletest"
     WIFI_AP_TIMEOUT_MINUTES = 10
     BLINK_INTERVAL = 0.25
@@ -51,12 +51,12 @@ class PicowidFoundation:
         return True, ""
 
     def safe_start_access_point(self, ssid, password):
-        """Bulletproof AP startup with fallback"""
+        """Robust AP startup with fallback"""
         is_valid, error_msg = self.validate_wifi_password(password)
         if not is_valid:
             self.startup_print(f"Password validation failed: {error_msg}")
             self.startup_print("Falling back to default credentials")
-            ssid = "Picowide"
+            ssid = "Picowicd"
             password = "simpletest"
 
         try:
@@ -67,9 +67,9 @@ class PicowidFoundation:
         except Exception as e:
             self.startup_print(f"AP start failed: {e}")
             try:
-                wifi.radio.start_ap(ssid="Picowide", password="simpletest")
+                wifi.radio.start_ap(ssid="Picowicd", password="simpletest")
                 self.startup_print("AP started with defaults")
-                return False, "Picowide", "simpletest"
+                return False, "Picowicd", "simpletest"
             except Exception as e2:
                 self.startup_print(f"AP start failed completely: {e2}")
                 return False, ssid, password
@@ -90,7 +90,7 @@ class PicowidFoundation:
             return False
 
     def load_user_config(self):
-        """Bulletproof config loading with settings.toml priority and config.py fallback"""
+        """Robust config loading with settings.toml priority and config.py fallback"""
         # Cache os.getenv calls as recommended by CircuitPython docs
         import os
 

@@ -1,6 +1,6 @@
 """
 LED Control Module - Enhanced version with toggle and blinky modes
-Adapted from picowide for modular foundation
+Adapted from picowicd for modular foundation
 """
 import digitalio
 import board

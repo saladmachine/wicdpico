@@ -2,7 +2,7 @@
 
 ## **Overview**
 
-Picowicd transforms your Raspberry Pi Pico W into a modular, web-based instrument control platform for controlled environment agriculture (CEA) and research applications. Built on the proven foundation of the picowide wireless IDE, picowicd provides a class-based modular framework for building custom instrument control dashboards and I2C sensor platforms.
+Picowicd transforms your Raspberry Pi Pico W into a modular, web-based instrument control platform for controlled environment agriculture (CEA) and research applications. Built on the proven foundation of the picowicd wireless IDE, picowicd provides a class-based modular framework for building custom instrument control dashboards and I2C sensor platforms.
 
 Whether you're monitoring greenhouse conditions, controlling irrigation systems, or developing new CEA instrumentation, picowicd's modular architecture allows you to rapidly prototype and deploy robust control systems that can be shared and reused across research projects.
 
@@ -67,7 +67,7 @@ Each module follows the `PicowidModule` base class pattern:
 
 ### **Core Foundation**
 * **Self-Hosted Web Server:** Runs directly on the Pico W, serving modular dashboards
-* **Wi-Fi Hotspot (Access Point):** Creates a "Picowide" Wi-Fi network for direct device connection
+* **Wi-Fi Hotspot (Access Point):** Creates a "Picowicd" Wi-Fi network for direct device connection
 * **Robust Configuration System:**
     * Never crashes - always falls back to working defaults
     * HTML entity decoding fixes corruption from web sources
@@ -90,7 +90,7 @@ Each module follows the `PicowidModule` base class pattern:
 ## **Development Phases**
 
 * **Phase 1**: Foundation verification (Complete)
-* **Phase 2**: Picowide rebuild using modular architecture (In Progress)
+* **Phase 2**: Picowicd rebuild using modular architecture (In Progress)
 * **Phase 3**: Instrument control tools for CEA applications (Planned)
 
 ## **Getting Started**
@@ -127,7 +127,7 @@ Each module follows the `PicowidModule` base class pattern:
 
 ### **Connecting to the System**
 
-1. **Join WiFi Network:** Connect to "Picowide" network (password: "simpletest")
+1. **Join WiFi Network:** Connect to "Picowicd" network (password: "simpletest")
 2. **Open Dashboard:** Navigate to `http://192.168.4.1` in any web browser
 3. **Access Modules:** Use the modular dashboard to control your instruments
 
@@ -206,7 +206,7 @@ Modules have access to foundation services:
 
 ```toml
 # Wi-Fi hotspot configuration
-WIFI_SSID = "Picowide"
+WIFI_SSID = "Picowicd"
 WIFI_PASSWORD = "simpletest"
 
 # System timeout (minutes)
@@ -300,7 +300,7 @@ MIT License - see LICENSE file for details.
 ## **Acknowledgments**
 
 * Built on CircuitPython and Adafruit libraries
-* Foundation derived from picowide wireless IDE
+* Foundation derived from picowicd wireless IDE
 * Designed for CEA research and low-cost instrumentation
 * Developed with AI assistance for rapid prototyping and robust implementation
 
