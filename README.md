@@ -307,3 +307,7 @@ MIT License - see LICENSE file for details.
 ---
 
 **For Researchers:** This modular platform enables rapid development of custom instrumentation without starting from scratch. Share modules with colleagues to accelerate CEA research and reduce development costs across the community.
+
+---
+
+**AI Assistance Note:** This project, including aspects of its code (e.g., structure, debugging assistance, error handling enhancements) and the drafting of this `README.md`, was significantly assisted by large language models, specifically Gemini by Google and Claude by Anthropic. This collaboration highlights the evolving landscape of modern open-source development, demonstrating how AI tools can empower makers to bring complex projects to fruition and achieve robust, production-ready implementations.
