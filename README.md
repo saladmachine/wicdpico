@@ -69,10 +69,10 @@ Each module follows the `PicowidModule` base class pattern:
 * **Self-Hosted Web Server:** Runs directly on the Pico W, serving modular dashboards
 * **Wi-Fi Hotspot (Access Point):** Creates a "Picowicd" Wi-Fi network for direct device connection
 * **Robust Configuration System:**
-    * Never crashes - always falls back to working defaults
+    * Crash resistant - falls back to working defaults
     * HTML entity decoding fixes corruption from web sources
     * Individual attribute validation with graceful fallback
-    * Self-healing: can always connect to default credentials to fix issues
+    * Self-healing: can connect to default credentials to fix issues
 * **Plugin Architecture:** Easy registration and management of functional modules
 * **Template System:** Centralized UI rendering for consistent dashboard appearance
 
@@ -97,7 +97,7 @@ Each module follows the `PicowidModule` base class pattern:
 
 ### **Hardware Requirements**
 
-* Raspberry Pi Pico W
+* Raspberry Pi Pico 2 W
 * Micro USB cable (for initial setup)
 * External power source for field deployment
 * I2C sensors/actuators as needed for your application
@@ -127,7 +127,7 @@ Each module follows the `PicowidModule` base class pattern:
 
 ### **Connecting to the System**
 
-1. **Join WiFi Network:** Connect to "Picowicd" network (password: "simpletest")
+1. **Join WiFi Network:** Connect to "Picowicd" network (password: "simpletest" SSID and PW are configurble in settings.toml)
 2. **Open Dashboard:** Navigate to `http://192.168.4.1` in any web browser
 3. **Access Modules:** Use the modular dashboard to control your instruments
 
@@ -222,7 +222,7 @@ Picowicd features robust error handling:
 * **Missing config:** Uses safe defaults
 * **Corrupted settings:** Individual fallback per setting
 * **Network issues:** Automatic retry with default credentials
-* **Module errors:** Graceful degradation without system failure
+* **Module errors:** Graceful degradation reduces system failure
 
 ## **Real-World Application Examples**
 
@@ -269,8 +269,8 @@ Picowicd features robust error handling:
 
 ## **Technical Specifications**
 
-* **Memory Requirements:** 264KB RAM minimum
-* **Storage:** 2MB flash storage
+* **Memory:** 520KB of SRAM
+* **Storage:** 4MB on-board flash storage
 * **Network:** 802.11n WiFi (2.4GHz)
 * **Power:** 3.3V operation, 5V tolerant inputs
 * **I2C Support:** Multiple sensor/actuator connections
@@ -300,9 +300,6 @@ MIT License - see LICENSE file for details.
 ## **Acknowledgments**
 
 * Built on CircuitPython and Adafruit libraries
-* Foundation derived from picowicd wireless IDE
-* Designed for CEA research and low-cost instrumentation
-* Developed with AI assistance for rapid prototyping and robust implementation
 
 ---
 
