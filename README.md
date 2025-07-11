@@ -2,7 +2,7 @@
 
 ## **Overview**
 
-Picowicd transforms your Raspberry Pi Pico W into a modular, web-based instrument control platform for controlled environment agriculture (CEA) and research applications. Built on the proven foundation of the picowicd wireless IDE, picowicd provides a class-based modular framework for building custom instrument control dashboards and I2C sensor platforms.
+Picowicd (Pico wireless instrumentation and control dashboard) transforms your Raspberry Pi Pico W into a modular, web-based instrument control platform for controlled environment agriculture (CEA) and research applications. Built on the proven foundation of the picowicd wireless IDE, picowicd provides a class-based modular framework for building custom instrument control dashboards and I2C sensor platforms.
 
 Whether you're monitoring greenhouse conditions, controlling irrigation systems, or developing new CEA instrumentation, picowicd's modular architecture allows you to rapidly prototype and deploy robust control systems that can be shared and reused across research projects.
 
