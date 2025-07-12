@@ -17,7 +17,7 @@ class Config:
     WIFI_AP_TIMEOUT_MINUTES = 10
     BLINK_INTERVAL = 0.25
 
-class PicowidFoundation:
+class PicowicdFoundation:
     def __init__(self):
         self.config = Config()
         self.startup_log = []
