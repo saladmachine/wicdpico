@@ -1,21 +1,37 @@
 """
 Test application to verify LED Control module with foundation
 """
-from foundation_core import PicowidFoundation
+# Existing imports
+from foundation_core import PicowicdFoundation # Changed name
 from led_control import LEDControlModule
 from file_manager import FileManagerModule
-from console_monitor_minimal import ConsoleMonitorModule
+from console_monitor_simple import ConsoleMonitorModule
 from adafruit_httpserver import Request, Response
+from rtc_control_module import RTCControlModule
+
+# NEW: Import the BatteryMonitorModule
+from battery_monitor import BatteryMonitorModule # Add this line
+
+print("=== **** VSCode CircuitPython Test **** ===")
+
+import supervisor
+supervisor.runtime.autoreload = False
+print(f"Autoreload disabled: {supervisor.runtime.autoreload}")
 
 def main():
     # Initialize foundation
-    foundation = PicowidFoundation()
-    foundation.startup_print("Starting LED Control test...")
+    # Changed instantiation to the new class name
+    foundation = PicowicdFoundation() # Change this line
+    foundation.startup_print("Starting Picowicd Application...") # Generic message
 
     # Initialize network
     if not foundation.initialize_network():
         foundation.startup_print("Network initialization failed!")
         return
+
+    rtc_module = RTCControlModule(foundation)
+    foundation.register_module("rtc_control", rtc_module)
+
 
     # Create and register LED module
     led_module = LEDControlModule(foundation)
@@ -29,17 +45,21 @@ def main():
     console_module = ConsoleMonitorModule(foundation)
     foundation.register_module("console", console_module)
 
+    # NEW: Create and register Battery Monitor module
+    battery_module = BatteryMonitorModule(foundation) # Add this line
+    foundation.register_module("battery_monitor", battery_module) # Add this line
+
     @foundation.server.route("/", methods=['GET'])
     def handle_root(request: Request):
         return Response(
             request,
-            foundation.render_dashboard("Picowicd LED Test"),
+            foundation.render_dashboard("Picowicd Dashboard"), # Changed title
             content_type="text/html"
         )
 
     # Start server and run
     foundation.start_server()
-    foundation.startup_print("LED Control test ready!")
+    foundation.startup_print("Picowicd Application ready!") # Generic message
     foundation.run_main_loop()
 
 if __name__ == "__main__":
