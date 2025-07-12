@@ -5,7 +5,10 @@
 		}
 	],
 	"settings": {
-		"python.languageServer": "Pylance",
+		"python.languageServer": "Jedi",
+		"circuitpython.autoConnect": true,
+		"circuitpython.serialPort": "/dev/ttyACM0",
+		"circuitpython.autoStartSerial": true,
 		"circuitpython.board.version": "9.2.8",
 		"circuitpython.board.vid": "0x239A",
 		"circuitpython.board.pid": "0x8162",
@@ -25,6 +28,7 @@
 					"cmd": "cp \"${file}\" /media/joepardue/CIRCUITPY/"
 				}
 			]
-		}
+		},
+		"window.zoomLevel": 1
 	}
 }
