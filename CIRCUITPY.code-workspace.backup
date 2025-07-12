@@ -1,0 +1,28 @@
+{
+  "folders": [
+    {
+      "path": "."
+    }
+  ],
+  "settings": {
+    "python.analysis.extraPaths": ["./lib", "."],
+    "files.watcherExclude": {
+      "**/lib/**": true
+    },
+    "filewatcher.commands": [
+      {
+        "match": "\\.(py|toml)$",
+        "isAsync": true,
+        "cmd": "cp '${file}' '/media/joepardue/CIRCUITPY/${fileBasename}'"
+      }
+    ],
+    "python.languageServer": "Pylance"
+  },
+  "extensions": {
+    "recommendations": [
+      "wmerkens.vscode-circuitpython-v2",
+      "ms-python.python",
+      "appulate.filewatcher"
+    ]
+  }
+}
