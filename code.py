@@ -1,67 +1,60 @@
-# Auto-save test - July 12
+#!/usr/bin/env python3
 """
-Test application to verify LED Control module with foundation
+Test your existing RTC module without the full foundation
 """
-# Existing imports
-from foundation_core import PicowicdFoundation # Changed name
-from led_control import LEDControlModule
-from file_manager import FileManagerModule
-from console_monitor_simple import ConsoleMonitorModule
-from adafruit_httpserver import Request, Response
-from rtc_control_module import RTCControlModule
 
-# NEW: Import the BatteryMonitorModule
-from battery_monitor import BatteryMonitorModule # Add this line
+import time
 
-print("=== **** VSCode CircuitPython Test **** ===")
-
-import supervisor
-supervisor.runtime.autoreload = False
-print(f"Autoreload disabled: {supervisor.runtime.autoreload}")
+# Mock foundation class for testing
+class MockFoundation:
+    def startup_print(self, message):
+        print(f"[Foundation] {message}")
 
 def main():
-    # Initialize foundation
-    # Changed instantiation to the new class name
-    foundation = PicowicdFoundation() # Change this line
-    foundation.startup_print("Starting Picowicd Application...") # Generic message
-
-    # Initialize network
-    if not foundation.initialize_network():
-        foundation.startup_print("Network initialization failed!")
-        return
-
-    rtc_module = RTCControlModule(foundation)
-    foundation.register_module("rtc_control", rtc_module)
-
-
-    # Create and register LED module
-    led_module = LEDControlModule(foundation)
-    foundation.register_module("led_control", led_module)
-
-    # Create and register File Manager module
-    file_manager_module = FileManagerModule(foundation)
-    foundation.register_module("file_manager", file_manager_module)
-
-    # Create and register Console Monitor module
-    console_module = ConsoleMonitorModule(foundation)
-    foundation.register_module("console", console_module)
-
-    # NEW: Create and register Battery Monitor module
-    battery_module = BatteryMonitorModule(foundation) # Add this line
-    foundation.register_module("battery_monitor", battery_module) # Add this line
-
-    @foundation.server.route("/", methods=['GET'])
-    def handle_root(request: Request):
-        return Response(
-            request,
-            foundation.render_dashboard("Picowicd Dashboard"), # Changed title
-            content_type="text/html"
-        )
-
-    # Start server and run
-    foundation.start_server()
-    foundation.startup_print("Picowicd Application ready!") # Generic message
-    foundation.run_main_loop()
+    print("=== Testing Your RTC Module ===")
+    
+    try:
+        # Create mock foundation
+        foundation = MockFoundation()
+        
+        # Import and test your module
+        from rtc_control_module import RTCControlModule
+        
+        print("1. Creating RTC module...")
+        rtc_module = RTCControlModule(foundation)
+        print(f"   Module name: {rtc_module.name}")
+        print(f"   RTC available: {rtc_module.rtc_available}")
+        
+        if rtc_module.rtc_available:
+            print("\n2. Testing RTC functionality...")
+            
+            # Test direct RTC access
+            current_time = rtc_module.rtc.datetime
+            print(f"   Current time: {current_time}")
+            
+            # Test formatted display
+            formatted_time = f"{rtc_module.days[current_time.tm_wday]} {current_time.tm_mon}/{current_time.tm_mday}/{current_time.tm_year} {current_time.tm_hour:02d}:{current_time.tm_min:02d}:{current_time.tm_sec:02d}"
+            print(f"   Formatted: {formatted_time}")
+            
+            # Test status checks
+            print(f"   Battery low: {rtc_module.rtc.battery_low}")
+            print(f"   Lost power: {rtc_module.rtc.lost_power}")
+            
+            print("\n3. Testing update method...")
+            rtc_module.update()
+            
+            print("\n✅ RTC module test completed successfully!")
+            
+        else:
+            print("❌ RTC not available - check hardware connections")
+            
+    except ImportError as e:
+        print(f"❌ Import error: {e}")
+        print("Make sure rtc_control_module.py and module_base.py are present")
+    except Exception as e:
+        print(f"❌ Error during testing: {e}")
+        import traceback
+        traceback.print_exc()
 
 if __name__ == "__main__":
     main()

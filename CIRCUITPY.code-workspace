@@ -5,7 +5,7 @@
 		}
 	],
 	"settings": {
-		"python.languageServer": "Jedi",
+		"python.languageServer": "Pylance",
 		"circuitpython.autoConnect": true,
 		"circuitpython.serialPort": "/dev/ttyACM0",
 		"circuitpython.autoStartSerial": true,
