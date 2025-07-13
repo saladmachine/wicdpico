@@ -1,4 +1,4 @@
-class PicowidModule:
+class PicowicdModule:
     """Base class for all picowicd modules"""
     
     def __init__(self, foundation):
