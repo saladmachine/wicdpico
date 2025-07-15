@@ -1,18 +1,49 @@
-# **WicdNode: Modular Instrument Control Platform**
+# **WicdPico: Wireless Instrumentation Control Platform**
 
 ## **Overview**
 
-WicdNode (wireless instrumentation and control device node) transforms your Raspberry Pi Pico W into a modular, web-based instrument control platform for controlled environment agriculture (CEA) and research applications.
+WicdPico (wireless instrumentation and control device - Pico) transforms your Raspberry Pi Pico W into a versatile wireless control platform that adapts to your instrumentation needs. Whether you need a standalone handheld instrument or a networked sensor node, wicdpico provides the modular foundation to build professional-grade control systems.
 
-For example, in precision agriculture research, wicdnode democratizes instrumentation by delivering order-of-magnitude cost reductions compared to commercial CEA systems while maintaining research-quality data collection and control capabilities. This open-source platform enables sub-$50 sensor nodes versus $500+ commercial alternatives, making professional-grade environmental monitoring accessible to resource-constrained research institutions.
+## **Dual Deployment Modes**
 
-Built on the proven foundation of the picowicd wireless IDE, wicdnode provides a class-based modular framework for building custom instrument control dashboards and I2C sensor platforms.
+WicdPico operates in two distinct modes using the same hardware and codebase:
 
-Whether you're monitoring greenhouse conditions, controlling irrigation systems, or developing new CEA instrumentation, wicdnode's modular architecture allows you to rapidly prototype and deploy robust control systems that can be shared and reused across research projects.
+### **📱 WicdMeter Mode: Standalone Wireless Instrument**
+Configure as a self-contained wireless meter:
+- **Creates its own WiFi hotspot** - no existing network required
+- **Serves web-based control panel** - access from any phone, tablet, or laptop
+- **Perfect for field instruments** - handheld meters, portable monitors, remote controls
+- **Zero infrastructure dependency** - works anywhere with power
+
+*Example: A handheld environmental meter that creates "MeterWiFi" hotspot. Connect your phone, navigate to 192.168.4.1, and control/monitor the instrument through a responsive web interface.*
+
+### **🌐 WicdNode Mode: Networked Sensor Node**  
+Configure as a node in larger instrumentation networks:
+- **Connects to existing WiFi** - joins your lab or facility network
+- **MQTT communication** - publishes data to central hub systems
+- **Scalable architecture** - deploy 5, 10, or 50+ nodes
+- **Centralized monitoring** - all nodes report to unified dashboard
+
+*Example: Precision agriculture research with 20 wicdnodes throughout a greenhouse, all reporting to a Raspberry Pi hub running Home Assistant for data logging and analysis.*
+
+## **Why This Dual Approach Matters**
+
+**Same hardware, same code - different configuration.** Most embedded platforms lock you into one deployment pattern. WicdPico adapts between wicdmeter and wicdnode modes based on your needs:
+
+**Research Labs:** Start with standalone prototypes, scale to networked systems  
+**Field Work:** No WiFi? No problem - each device is self-sufficient  
+**Education:** Students build instruments that work anywhere  
+**Commercial:** Single codebase supports both handheld products and IoT deployments
+
+For example, in precision agriculture research, wicdpico democratizes instrumentation by delivering order-of-magnitude cost reductions compared to commercial CEA systems while maintaining research-quality data collection and control capabilities. This open-source platform enables sub-$50 sensor nodes versus $500+ commercial alternatives, making professional-grade environmental monitoring accessible to resource-constrained research institutions.
+
+Built on proven modular architecture, wicdpico provides a class-based framework for building custom instrument control dashboards and sensor platforms that work equally well as standalone devices or networked systems.
+
+Whether you're monitoring greenhouse conditions, controlling irrigation systems, or developing new CEA instrumentation, wicdpico's modular architecture allows you to rapidly prototype and deploy robust control systems that can be shared and reused across research projects.
 
 ## **Design Philosophy: "Lego Blocks for Embedded Interfaces"**
 
-WicdNode is designed as a **modular dashboard system** where functional components can be "bolted in" to create custom embedded instruments. Rather than building monolithic applications, developers can:
+WicdPico is designed as a **modular dashboard system** where functional components can be "bolted in" to create custom embedded instruments. Rather than building monolithic applications, developers can:
 
 - **Select pre-built functional modules** (LED control, file management, logging, sensors)
 - **Configure each module** for specific needs
@@ -23,7 +54,7 @@ This is **code-based assembly** requiring developer knowledge, but with standard
 
 ## **Documentation**
 
-* **Complete API Documentation:** https://wicdnode.readthedocs.io
+* **Complete API Documentation:** https://wicdpico.readthedocs.io
 * **Installation Guide:** Detailed setup instructions with troubleshooting
 * **Module Development:** Professional Sphinx docstrings and integration examples
 * **Research Applications:** Academic use cases and validation data
