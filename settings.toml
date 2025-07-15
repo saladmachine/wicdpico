@@ -2,9 +2,12 @@
 # Connect picowicd to Pi5 WCS Hub for academic publication
 
 # WiFi Configuration - Pi5 WCS Hub Network
-WIFI_SSID = "joepardue"
-WIFI_PASSWORD = "pudden789"
-WIFI_MODE = "CLIENT"
+#WIFI_SSID = "joepardue"
+#WIFI_PASSWORD = "pudden789"
+#WIFI_MODE = "CLIENT"
+WIFI_SSID = "PicoTest-Node00"
+WIFI_PASSWORD = "testpass123"
+WIFI_MODE = "AP"
 
 # MQTT Configuration - Pi5 Mosquitto Broker
 MQTT_BROKER = "192.168.99.1"

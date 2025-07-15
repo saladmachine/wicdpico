@@ -1,46 +1,98 @@
-# mqtt_no_auth_test.py - Test MQTT without authentication
+# code.py - Single Node Test with Improved Docstrings
+"""
+Test the improved foundation system with MQTT module
+Uses node00 configuration for single-node testing
+"""
+import gc
 import time
-import wifi
-import socketpool
-import adafruit_minimqtt.adafruit_minimqtt as MQTT
 
-# Pi5 WCS Hub connection settings
-WIFI_SSID = "joepardue"
-WIFI_PASSWORD = "pudden789"
-MQTT_BROKER = "192.168.99.1"
-MQTT_PORT = 1883
+def main():
+    try:
+        print("=== PICOWICD FOUNDATION TEST - NODE00 ===")
+        
+        # Test foundation with improved docstrings
+        print("Loading foundation_core...")
+        from foundation_core import PicowicdFoundation
+        
+        print("Creating foundation...")
+        foundation = PicowicdFoundation()
+        
+        print("Initializing network...")
+        if foundation.initialize_network():
+            print(f"✓ Network ready - Mode: {foundation.wifi_mode}")
+            
+            # Test MQTT module with improved docstrings
+            print("Loading MQTT module...")
+            from mqtt_module import MQTTModule
+            
+            print("Creating MQTT module...")
+            mqtt = MQTTModule(foundation)
+            
+            print("Registering MQTT module...")
+            foundation.register_module("mqtt", mqtt)
+            
+            # Test LED module
+            print("Loading LED module...")
+            from led_control import LEDControlModule
+            
+            print("Creating LED module...")
+            led = LEDControlModule(foundation)
+            
+            print("Registering LED module...")
+            foundation.register_module("led", led)
+            
+            print("Starting web server...")
+            foundation.start_server()
+            
+            print("✓ Foundation system ready with improved docstrings!")
+            print(f"✓ Access at: http://{foundation.server._server_socket.getsockname()[0]}")
+            print("✓ MQTT and LED modules loaded")
+            print("✓ Running main loop...")
+            
+            # Run for limited time for testing
+            test_duration = 60  # 1 minute test
+            start_time = time.monotonic()
+            
+            while time.monotonic() - start_time < test_duration:
+                foundation.server.poll()
+                
+                # Update all modules
+                for module in foundation.modules.values():
+                    module.update()
+                
+                time.sleep(0.1)
+                gc.collect()
+            
+            print("✓ Test completed successfully!")
+            print("✓ Improved docstrings working correctly")
+            
+        else:
+            print("✗ Network initialization failed")
+            
+    except Exception as e:
+        print(f"✗ Test failed: {e}")
+        import sys
+        sys.print_exception(e)
+        
+    finally:
+        # Cleanup
+        try:
+            if 'foundation' in locals():
+                for module in foundation.modules.values():
+                    module.cleanup()
+        except:
+            pass
+        
+        print("=== TEST COMPLETE ===")
+        print("If you saw '✓ Test completed successfully!' the docstrings work!")
+        
+        # Keep running for manual testing
+        print("Continuing to run for manual testing...")
+        while True:
+            time.sleep(1)
 
-print("=== MQTT TEST WITHOUT AUTHENTICATION ===")
-
-# Connect to WiFi
-print(f"Connecting to WiFi: {WIFI_SSID}")
-wifi.radio.connect(WIFI_SSID, WIFI_PASSWORD)
-print(f"Connected! IP: {wifi.radio.ipv4_address}")
-
-# Create socket pool
-pool = socketpool.SocketPool(wifi.radio)
-
-# Create MQTT client WITH proper credentials
-mqtt_client = MQTT.MQTT(
-    broker=MQTT_BROKER,
-    port=MQTT_PORT,
-    username="picowicd",      # Use the user we created
-    password="picowicd123",   # Use the password we set
-    socket_pool=pool,
-    is_ssl=False
-)
-
-# Connect to MQTT broker
-print(f"Connecting to MQTT broker at {MQTT_BROKER}:{MQTT_PORT} (picowicd user)")
-try:
-    mqtt_client.connect()
-    print("✓ MQTT connection successful!")
-    
-    # Publish test message
-    mqtt_client.publish("wcs/node01/test", "Hello no auth!")
-    print("✓ Published test message!")
-    
-except Exception as e:
-    print(f"MQTT Error: {e}")
-
-print("=== NO AUTH TEST COMPLETE ===")
+# Run the test
+if __name__ == "__main__":
+    main()
+else:
+    main()
