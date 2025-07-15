@@ -1,6 +1,69 @@
 """
-PicowidFoundation - Robust base system for all picowicd applications
-Updated with WiFi mode support for MQTT client connections
+Foundation Core - Robust Base System for PicoWicd Applications
+==============================================================
+
+The foundation core provides the essential infrastructure for all picowicd
+applications, including network management, web server functionality, and
+module integration.
+
+Hardware Requirements
+--------------------
+* Raspberry Pi Pico 2 W microcontroller
+* CircuitPython 9.0+ firmware
+* WiFi network access (client mode) or standalone operation (AP mode)
+
+Software Dependencies  
+--------------------
+* adafruit_httpserver
+* wifi (built-in CircuitPython)
+* socketpool (built-in CircuitPython)
+* ipaddress (built-in CircuitPython)
+
+Key Features
+-----------
+* **Dual WiFi Modes**: Client mode for hub integration, AP mode for standalone
+* **Robust Configuration**: Settings.toml priority with fallback to config.py
+* **Modular Architecture**: Plugin system for sensor and control modules
+* **Web Interface**: Built-in HTTP server with template system
+* **Error Recovery**: Graceful handling of network and configuration failures
+
+Network Modes
+-------------
+**Client Mode**
+    Connects to existing WiFi network (typically Pi5 WCS Hub)
+    Ideal for multi-node sensor networks with centralized data collection
+    
+**Access Point Mode**
+    Creates own WiFi hotspot for direct device access
+    Perfect for standalone operation and initial configuration
+
+.. code-block:: python
+
+    # Basic foundation setup
+    from foundation_core import PicowicdFoundation
+    
+    # Initialize with automatic network detection
+    foundation = PicowicdFoundation()
+    foundation.initialize_network()  # Auto-detects client/AP mode
+    foundation.start_server()
+    
+    # Register modules
+    from mqtt_module import MQTTModule
+    mqtt = MQTTModule(foundation)
+    foundation.register_module("mqtt", mqtt)
+    
+    # Start main application loop
+    foundation.run_main_loop()
+
+Configuration Priority
+---------------------
+1. **settings.toml** (preferred modern approach)
+2. **config.py** (legacy fallback)
+3. **Emergency defaults** (built-in safety values)
+
+.. note::
+   The foundation automatically detects the best available configuration
+   source and applies robust defaults if configuration loading fails.
 """
 import wifi
 import socketpool
@@ -12,7 +75,19 @@ import gc
 from foundation_templates import TemplateSystem
 
 class Config:
-    """Robust configuration with guaranteed defaults"""
+    """
+    Configuration container with guaranteed defaults.
+    
+    Provides robust default values for all system configuration
+    parameters to ensure system stability even if user configuration fails.
+    
+    :ivar WIFI_SSID: Default WiFi network name
+    :vartype WIFI_SSID: str
+    :ivar WIFI_PASSWORD: Default WiFi password
+    :vartype WIFI_PASSWORD: str
+    :ivar WIFI_MODE: Network mode - "AP" or "CLIENT"
+    :vartype WIFI_MODE: str
+    """
     WIFI_SSID = "Picowicd"
     WIFI_PASSWORD = "simpletest"
     WIFI_MODE = "AP"  # Default to AP mode
@@ -20,7 +95,36 @@ class Config:
     BLINK_INTERVAL = 0.25
 
 class PicowicdFoundation:
+    """
+    Core foundation class providing network, web server, and module management.
+    
+    The PicowicdFoundation serves as the central coordination point for all
+    picowicd functionality, managing network connectivity, HTTP services,
+    and module integration.
+    
+    :param config_source: Optional configuration override
+    :type config_source: dict or None
+    
+    .. code-block:: python
+    
+        # Create foundation instance
+        foundation = PicowicdFoundation()
+        
+        # Initialize network (auto-detects mode)
+        if foundation.initialize_network():
+            print("Network ready")
+        
+        # Register custom modules
+        foundation.register_module("sensors", sensor_module)
+    """
+    
     def __init__(self):
+        """
+        Initialize foundation system with default configuration.
+        
+        Sets up configuration container, logging system, and template engine.
+        Does not initialize network - call initialize_network() separately.
+        """
         self.config = Config()
         self.startup_log = []
         self.server = None
@@ -30,12 +134,30 @@ class PicowicdFoundation:
         self.templates = TemplateSystem()
 
     def startup_print(self, message):
-        """Dual console/web logging for debugging"""
+        """
+        Dual console/web logging for debugging.
+        
+        Prints message to console and stores in startup log for
+        web dashboard display and debugging purposes.
+        
+        :param message: Message to log
+        :type message: str
+        """
         print(message)
         self.startup_log.append(message)
 
     def decode_html_entities(self, text):
-        """Clean web form input of HTML entities"""
+        """
+        Clean web form input of HTML entities.
+        
+        Converts common HTML entities back to their character equivalents
+        for safe processing of user input from web forms.
+        
+        :param text: Text containing HTML entities
+        :type text: str
+        :return: Text with entities decoded
+        :rtype: str
+        """
         text = text.replace('&quot;', '"')
         text = text.replace('&amp;', '&')
         text = text.replace('&lt;', '<')
@@ -44,7 +166,17 @@ class PicowicdFoundation:
         return text
 
     def validate_wifi_password(self, password):
-        """Validate WPA2 requirements"""
+        """
+        Validate WPA2 requirements for WiFi password.
+        
+        Ensures password meets minimum security requirements for
+        WPA2 wireless networks.
+        
+        :param password: Password to validate
+        :type password: str
+        :return: Tuple of (is_valid, error_message)
+        :rtype: tuple[bool, str]
+        """
         if not password:
             return False, "WiFi password cannot be empty"
         if len(password) < 8:
@@ -54,7 +186,19 @@ class PicowicdFoundation:
         return True, ""
 
     def safe_start_access_point(self, ssid, password):
-        """Robust AP startup with fallback"""
+        """
+        Robust AP startup with fallback.
+        
+        Attempts to start WiFi access point with given credentials,
+        falling back to emergency settings if validation or startup fails.
+        
+        :param ssid: Network name for access point
+        :type ssid: str
+        :param password: Network password
+        :type password: str
+        :return: Tuple of (success, actual_ssid, actual_password)
+        :rtype: tuple[bool, str, str]
+        """
         is_valid, error_msg = self.validate_wifi_password(password)
         if not is_valid:
             self.startup_print(f"Password validation failed: {error_msg}")
@@ -78,7 +222,19 @@ class PicowicdFoundation:
                 return False, ssid, password
 
     def safe_connect_client(self, ssid, password):
-        """Robust client connection with timeout"""
+        """
+        Robust client connection with timeout.
+        
+        Attempts to connect to existing WiFi network with comprehensive
+        error handling and timeout protection.
+        
+        :param ssid: WiFi network name to connect to
+        :type ssid: str
+        :param password: WiFi network password
+        :type password: str
+        :return: Tuple of (success, ssid, password)
+        :rtype: tuple[bool, str, str]
+        """
         try:
             self.startup_print(f"Connecting to WiFi: {ssid}")
             wifi.radio.connect(ssid, password, timeout=30)
@@ -95,7 +251,15 @@ class PicowicdFoundation:
             return False, ssid, password
 
     def safe_set_ipv4_address(self):
-        """Configure network with error handling - AP mode only"""
+        """
+        Configure network with error handling - AP mode only.
+        
+        Sets up IPv4 addressing for access point mode with standard
+        subnet configuration. Client mode handles IP automatically.
+        
+        :return: True if configuration successful
+        :rtype: bool
+        """
         if self.wifi_mode != "AP":
             return True  # Client mode handles IP automatically
             
@@ -113,7 +277,18 @@ class PicowicdFoundation:
             return False
 
     def load_user_config(self):
-        """Robust config loading with settings.toml priority and robust defaults"""
+        """
+        Robust config loading with settings.toml priority and robust defaults.
+        
+        Loads user configuration from settings.toml (preferred) or config.py
+        (fallback), with comprehensive error handling and emergency defaults.
+        
+        **Configuration Priority:**
+        
+        1. settings.toml (modern CircuitPython approach)
+        2. config.py (legacy compatibility)
+        3. Emergency defaults (built-in safety values)
+        """
         try:
             self.startup_print("Loading user config...")
 
@@ -199,7 +374,33 @@ class PicowicdFoundation:
             self.config.BLINK_INTERVAL = 0.10  # Rapid blink error indicator
 
     def initialize_network(self):
-        """Complete network initialization with mode support"""
+        """
+        Initialize network connectivity with automatic mode detection.
+        
+        Attempts client mode connection first (for hub integration), then
+        falls back to access point mode if client connection fails.
+        Provides comprehensive error handling and recovery.
+        
+        :return: True if network initialization successful
+        :rtype: bool
+        :raises NetworkError: If both client and AP modes fail
+        
+        **Network Priority:**
+        
+        1. **Client Mode**: Connect to existing WiFi (Pi5 WCS Hub)
+        2. **AP Fallback**: Create own hotspot if client fails
+        3. **Emergency AP**: Use safe defaults if configuration invalid
+        
+        .. code-block:: python
+        
+            foundation = PicowicdFoundation()
+            
+            if foundation.initialize_network():
+                print(f"Connected: {foundation.wifi_mode}")
+                print(f"IP: {wifi.radio.ipv4_address}")
+            else:
+                print("Network initialization failed")
+        """
         self.load_user_config()
         
         # Determine WiFi mode
@@ -242,12 +443,39 @@ class PicowicdFoundation:
         return ap_success and ipv4_success
 
     def register_module(self, name, module):
-        """Add module to system"""
+        """
+        Register a module with the foundation system.
+        
+        Adds the module to the system registry and automatically
+        configures its web routes with the HTTP server.
+        
+        :param name: Unique identifier for the module
+        :type name: str
+        :param module: Module instance to register
+        :type module: PicowicdModule
+        :raises ValueError: If module name already exists
+        :raises TypeError: If module doesn't inherit from PicowicdModule
+        
+        .. code-block:: python
+        
+            # Register MQTT module
+            mqtt_module = MQTTModule(foundation)
+            foundation.register_module("mqtt", mqtt_module)
+            
+            # Register multiple modules
+            foundation.register_module("sensors", sensor_module)
+            foundation.register_module("logging", log_module)
+        """
         self.modules[name] = module
         module.register_routes(self.server)
 
     def start_server(self):
-        """Start web server with appropriate IP"""
+        """
+        Start web server with appropriate IP.
+        
+        Initializes HTTP server on the correct IP address based on
+        current network mode (client or access point).
+        """
         if self.wifi_mode == "CLIENT":
             server_ip = str(wifi.radio.ipv4_address)
         else:
@@ -257,7 +485,12 @@ class PicowicdFoundation:
         self.startup_print(f"Foundation ready at http://{server_ip}")
 
     def run_main_loop(self):
-        """Main polling loop with module updates"""
+        """
+        Main polling loop with module updates.
+        
+        Continuously processes HTTP requests and updates all registered
+        modules. Includes garbage collection for memory management.
+        """
         while True:
             self.server.poll()
 
@@ -269,7 +502,17 @@ class PicowicdFoundation:
             gc.collect()
 
     def render_dashboard(self, title="Picowicd Dashboard"):
-        """Render complete dashboard with all modules"""
+        """
+        Render complete dashboard with all modules.
+        
+        Generates HTML dashboard page by collecting content from all
+        registered modules and combining with system information.
+        
+        :param title: Page title for dashboard
+        :type title: str
+        :return: Complete HTML page
+        :rtype: str
+        """
         modules_html = ""
 
         # Collect HTML from all enabled modules

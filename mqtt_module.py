@@ -1,6 +1,71 @@
 """
-MQTT Module - Step 2: MQTT Configuration and Connection
-Part of picowicd modular system for academic WCS Hub demonstration
+MQTT Module - MQTT Configuration and Connection for Wireless Sensor Networks
+============================================================================
+
+Provides robust MQTT communication for sensor data transmission to central hub 
+systems. Features automatic reconnection, configurable topics, and comprehensive 
+error handling for reliable wireless sensor network operation.
+
+Hardware Requirements
+--------------------
+* Raspberry Pi Pico 2 W microcontroller
+* WiFi connectivity (managed by foundation)
+* MQTT broker accessibility (typically Pi5 WCS Hub)
+
+Software Dependencies
+--------------------
+* adafruit_minimqtt.adafruit_minimqtt
+* wifi (built-in CircuitPython)
+* socketpool (built-in CircuitPython)
+* ssl (built-in CircuitPython)
+
+MQTT Topics Structure
+--------------------
+The module publishes sensor data to a hierarchical topic structure:
+
+* ``wcs/{node_id}/temperature`` - Temperature readings (°C)
+* ``wcs/{node_id}/humidity`` - Humidity readings (%)
+* ``wcs/{node_id}/battery`` - Battery voltage (V)
+* ``wcs/{node_id}/status`` - Node status and JSON data
+
+Configuration (settings.toml)
+----------------------------
+.. code-block:: toml
+
+    MQTT_BROKER = "192.168.99.1"
+    MQTT_PORT = "1883"
+    MQTT_NODE_ID = "node01"
+    MQTT_PUBLISH_INTERVAL = "30"
+    MQTT_TOPIC_BASE = "wcs"
+
+Basic Usage Example
+------------------
+.. code-block:: python
+
+    # Initialize MQTT module
+    foundation = PicowicdFoundation()
+    mqtt = MQTTModule(foundation)
+    
+    # Connect and publish data
+    success, message = mqtt.connect_mqtt()
+    if success:
+        mqtt.publish_sensor_data()
+
+Integration Example
+------------------
+.. code-block:: python
+
+    # Complete sensor node setup
+    foundation = PicowicdFoundation()
+    foundation.initialize_network()
+    
+    # Add MQTT functionality  
+    mqtt = MQTTModule(foundation)
+    foundation.register_module("mqtt", mqtt)
+    
+    # Start system with automatic publishing
+    foundation.start_server()
+    foundation.run_main_loop()  # Handles auto-publish via update()
 """
 import time
 import os
@@ -12,7 +77,56 @@ from module_base import PicowicdModule
 from adafruit_httpserver import Request, Response
 
 class MQTTModule(PicowicdModule):
+    """
+    MQTT Client Module for Wireless Sensor Networks.
+    
+    Provides robust MQTT communication for sensor data transmission to
+    central hub systems. Features automatic reconnection, configurable
+    topics, and comprehensive error handling.
+    
+    :param foundation: PicoWicd foundation instance for system integration
+    :type foundation: PicowicdFoundation
+    
+    **Basic Usage:**
+    
+    .. code-block:: python
+    
+        # Initialize MQTT module
+        foundation = PicowicdFoundation()
+        mqtt = MQTTModule(foundation)
+        
+        # Connect and publish data
+        success, message = mqtt.connect_mqtt()
+        if success:
+            mqtt.publish_sensor_data()
+    
+    **Integration Example:**
+    
+    .. code-block:: python
+    
+        # Complete sensor node setup
+        foundation = PicowicdFoundation()
+        foundation.initialize_network()
+        
+        # Add MQTT functionality  
+        mqtt = MQTTModule(foundation)
+        foundation.register_module("mqtt", mqtt)
+        
+        # Start system with automatic publishing
+        foundation.start_server()
+        foundation.run_main_loop()  # Handles auto-publish via update()
+    """
+    
     def __init__(self, foundation):
+        """
+        Initialize MQTT module with foundation integration.
+        
+        Sets up MQTT client configuration, loads settings from foundation
+        configuration system, and prepares callback handlers.
+        
+        :param foundation: Foundation instance for system integration
+        :type foundation: PicowicdFoundation
+        """
         super().__init__(foundation)
         
         # Module identification
@@ -38,7 +152,12 @@ class MQTTModule(PicowicdModule):
         self.foundation.startup_print(f"MQTT broker: {self.broker_host}:{self.broker_port}")
     
     def _load_mqtt_config(self):
-        """Load MQTT configuration from settings.toml"""
+        """
+        Load MQTT configuration from settings.toml with fallback defaults.
+        
+        Reads MQTT broker settings from environment variables (settings.toml)
+        and provides robust fallback values if configuration is incomplete.
+        """
         try:
             # MQTT broker settings
             self.broker_host = os.getenv("MQTT_BROKER", "192.168.99.1")
@@ -70,7 +189,12 @@ class MQTTModule(PicowicdModule):
             self.topic_status = f"wcs/{self.node_id}/status"
     
     def _setup_mqtt_client(self):
-        """Initialize MQTT client with callbacks"""
+        """
+        Initialize MQTT client with callbacks and connection parameters.
+        
+        Creates MQTT client instance with proper socket pool, keepalive
+        settings, and callback function assignments.
+        """
         try:
             # Create socket pool
             pool = socketpool.SocketPool(wifi.radio)
@@ -97,7 +221,17 @@ class MQTTModule(PicowicdModule):
             self.foundation.startup_print(self.last_error)
     
     def _on_connect(self, client, userdata, flags, rc):
-        """Callback for successful MQTT connection"""
+        """
+        Callback for successful MQTT connection.
+        
+        Updates connection status and publishes initial online status
+        to the status topic.
+        
+        :param client: MQTT client instance
+        :param userdata: User data (unused)
+        :param flags: Connection flags
+        :param rc: Return code
+        """
         self.connected = True
         self.connection_attempts += 1
         self.status_message = f"Connected to {self.broker_host}"
@@ -111,17 +245,53 @@ class MQTTModule(PicowicdModule):
             self.foundation.startup_print(f"Status publish failed: {e}")
     
     def _on_disconnect(self, client, userdata, rc):
-        """Callback for MQTT disconnection"""
+        """
+        Callback for MQTT disconnection.
+        
+        Updates connection status and logs disconnection reason.
+        
+        :param client: MQTT client instance
+        :param userdata: User data (unused)
+        :param rc: Return code indicating disconnection reason
+        """
         self.connected = False
         self.status_message = f"Disconnected (code: {rc})"
         self.foundation.startup_print(f"MQTT disconnected: {self.status_message}")
     
     def _on_message(self, client, topic, message):
-        """Callback for received MQTT messages (for future use)"""
+        """
+        Callback for received MQTT messages (for future use).
+        
+        Handles incoming MQTT messages. Currently logs messages for
+        debugging; can be extended for remote control functionality.
+        
+        :param client: MQTT client instance
+        :param topic: Message topic
+        :type topic: str
+        :param message: Message payload
+        :type message: str
+        """
         self.foundation.startup_print(f"MQTT message: {topic} = {message}")
     
     def connect_mqtt(self):
-        """Attempt MQTT connection"""
+        """
+        Establish connection to MQTT broker.
+        
+        Attempts connection using configured broker settings with
+        comprehensive error handling and status reporting.
+        
+        :return: Tuple of (success_flag, status_message)
+        :rtype: tuple[bool, str]
+        :raises ConnectionError: If broker unreachable
+        
+        .. code-block:: python
+        
+            success, msg = mqtt.connect_mqtt()
+            if success:
+                print(f"Connected: {msg}")
+            else:
+                print(f"Failed: {msg}")
+        """
         if self.connected:
             return True, "Already connected"
         
@@ -142,7 +312,15 @@ class MQTTModule(PicowicdModule):
             return False, str(e)
     
     def disconnect_mqtt(self):
-        """Disconnect from MQTT broker"""
+        """
+        Disconnect from MQTT broker with graceful shutdown.
+        
+        Publishes offline status before disconnecting to notify
+        the hub of intentional shutdown.
+        
+        :return: Tuple of (success_flag, status_message)
+        :rtype: tuple[bool, str]
+        """
         if not self.connected:
             return True, "Not connected"
         
@@ -158,7 +336,30 @@ class MQTTModule(PicowicdModule):
             return False, str(e)
     
     def get_sensor_data(self):
-        """Get sensor readings - mock data for now, easy to replace with real sensors"""
+        """
+        Get sensor readings - mock data for now, easy to replace with real sensors.
+        
+        Generates realistic sensor data for testing and demonstration.
+        This method should be replaced with actual sensor reading code
+        when hardware sensors are integrated.
+        
+        :return: Dictionary containing sensor readings
+        :rtype: dict
+        
+        **Data Structure:**
+        
+        * temperature: Temperature in Celsius
+        * humidity: Humidity percentage  
+        * battery_voltage: Battery voltage
+        * timestamp: Unix timestamp
+        * node_id: Node identifier
+        
+        .. code-block:: python
+        
+            # Get current sensor readings
+            data = mqtt.get_sensor_data()
+            print(f"Temperature: {data['temperature']}°C")
+        """
         import time
         import random
         
@@ -184,7 +385,31 @@ class MQTTModule(PicowicdModule):
         return sensor_data
     
     def publish_sensor_data(self):
-        """Publish sensor data to MQTT broker"""
+        """
+        Publish current sensor readings to MQTT broker.
+        
+        Gathers sensor data and publishes to configured topics.
+        Currently uses mock data that can be easily replaced with
+        real sensor readings.
+        
+        :return: True if publish successful, False otherwise
+        :rtype: bool
+        :raises PublishError: If MQTT publish fails
+        
+        **Published Topics:**
+        
+        * Temperature (°C) to temperature topic
+        * Humidity (%) to humidity topic
+        * Battery voltage (V) to battery topic
+        * Complete JSON status to status topic
+        
+        .. code-block:: python
+        
+            # Manual publish trigger
+            if mqtt.connected:
+                success = mqtt.publish_sensor_data()
+                print(f"Publish: {'OK' if success else 'Failed'}")
+        """
         if not self.connected or not self.mqtt_client:
             self.last_error = "Not connected to MQTT broker"
             return False
@@ -220,7 +445,15 @@ class MQTTModule(PicowicdModule):
             return False
         
     def register_routes(self, server):
-        """Register MQTT control web endpoints"""
+        """
+        Register MQTT control web endpoints.
+        
+        Adds HTTP routes for manual MQTT control via web interface.
+        Provides endpoints for connection, disconnection, and test publishing.
+        
+        :param server: HTTP server instance to register routes with
+        :type server: adafruit_httpserver.Server
+        """
         
         @server.route("/mqtt-connect", methods=['POST'])
         def mqtt_connect(request: Request):
@@ -261,7 +494,15 @@ class MQTTModule(PicowicdModule):
                 return Response(request, f"Error: {str(e)}", content_type="text/plain")
     
     def get_dashboard_html(self):
-        """Return HTML for MQTT control interface"""
+        """
+        Return HTML for MQTT control interface.
+        
+        Generates interactive web dashboard widget for MQTT status
+        monitoring and manual control operations.
+        
+        :return: HTML string containing dashboard widget
+        :rtype: str
+        """
         connection_status = "Connected" if self.connected else "Disconnected"
         connection_color = "#28a745" if self.connected else "#dc3545"
         
@@ -337,7 +578,12 @@ class MQTTModule(PicowicdModule):
         '''
     
     def _get_error_display(self):
-        """Helper to show last error if any"""
+        """
+        Helper to show last error if any.
+        
+        :return: HTML error display or empty string
+        :rtype: str
+        """
         if self.last_error:
             return f'''
             <div class="status" style="border-left: 4px solid #dc3545;">
@@ -347,7 +593,12 @@ class MQTTModule(PicowicdModule):
         return ""
     
     def _format_last_publish(self):
-        """Helper to format last publish time"""
+        """
+        Helper to format last publish time.
+        
+        :return: Human-readable time since last publish
+        :rtype: str
+        """
         if self.last_publish == 0:
             return "Never"
         
@@ -363,7 +614,13 @@ class MQTTModule(PicowicdModule):
             return f"{seconds_ago // 3600}h ago"
     
     def update(self):
-        """Called from main loop - handle MQTT operations"""
+        """
+        Called from main loop - handle MQTT operations.
+        
+        Performs periodic MQTT maintenance including connection monitoring,
+        automatic reconnection, and scheduled sensor data publishing.
+        Called continuously by the foundation main loop.
+        """
         current_time = time.monotonic()
         
         # Handle MQTT client loop (process callbacks)
@@ -391,7 +648,12 @@ class MQTTModule(PicowicdModule):
             self.publish_sensor_data()
     
     def _attempt_reconnect(self):
-        """Attempt automatic reconnection"""
+        """
+        Attempt automatic reconnection.
+        
+        Internal method for handling automatic MQTT reconnection
+        when connection is lost.
+        """
         self._last_reconnect_attempt = time.monotonic()
         self.foundation.startup_print("Attempting MQTT reconnection...")
         success, message = self.connect_mqtt()
@@ -399,7 +661,12 @@ class MQTTModule(PicowicdModule):
             self.status_message = f"Reconnect failed: {message}"
     
     def cleanup(self):
-        """Shutdown MQTT connections cleanly"""
+        """
+        Shutdown MQTT connections cleanly.
+        
+        Performs graceful shutdown by publishing offline status
+        and disconnecting from MQTT broker. Called during system shutdown.
+        """
         if self.connected and self.mqtt_client:
             try:
                 self.foundation.startup_print("MQTT cleanup: Publishing offline status")
