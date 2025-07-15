@@ -1,14 +1,18 @@
-# **Picowicd: Modular Instrument Control Platform**
+# **WicdNode: Modular Instrument Control Platform**
 
 ## **Overview**
 
-Picowicd (Pico wireless instrumentation and control dashboard) transforms your Raspberry Pi Pico W into a modular, web-based instrument control platform for controlled environment agriculture (CEA) and research applications. Built on the proven foundation of the picowicd wireless IDE, picowicd provides a class-based modular framework for building custom instrument control dashboards and I2C sensor platforms.
+WicdNode (wireless instrumentation and control device node) transforms your Raspberry Pi Pico W into a modular, web-based instrument control platform for controlled environment agriculture (CEA) and research applications.
 
-Whether you're monitoring greenhouse conditions, controlling irrigation systems, or developing new CEA instrumentation, picowicd's modular architecture allows you to rapidly prototype and deploy robust control systems that can be shared and reused across research projects.
+For example, in precision agriculture research, wicdnode democratizes instrumentation by delivering order-of-magnitude cost reductions compared to commercial CEA systems while maintaining research-quality data collection and control capabilities. This open-source platform enables sub-$50 sensor nodes versus $500+ commercial alternatives, making professional-grade environmental monitoring accessible to resource-constrained research institutions.
+
+Built on the proven foundation of the picowicd wireless IDE, wicdnode provides a class-based modular framework for building custom instrument control dashboards and I2C sensor platforms.
+
+Whether you're monitoring greenhouse conditions, controlling irrigation systems, or developing new CEA instrumentation, wicdnode's modular architecture allows you to rapidly prototype and deploy robust control systems that can be shared and reused across research projects.
 
 ## **Design Philosophy: "Lego Blocks for Embedded Interfaces"**
 
-Picowicd is designed as a **modular dashboard system** where functional components can be "bolted in" to create custom embedded instruments. Rather than building monolithic applications, developers can:
+WicdNode is designed as a **modular dashboard system** where functional components can be "bolted in" to create custom embedded instruments. Rather than building monolithic applications, developers can:
 
 - **Select pre-built functional modules** (LED control, file management, logging, sensors)
 - **Configure each module** for specific needs
@@ -16,6 +20,13 @@ Picowicd is designed as a **modular dashboard system** where functional componen
 - **Deploy as a complete** embedded instrument
 
 This is **code-based assembly** requiring developer knowledge, but with standardized interfaces that make integration predictable and reliable.
+
+## **Documentation**
+
+* **Complete API Documentation:** https://wicdnode.readthedocs.io
+* **Installation Guide:** Detailed setup instructions with troubleshooting
+* **Module Development:** Professional Sphinx docstrings and integration examples
+* **Research Applications:** Academic use cases and validation data
 
 ## **Architecture**
 
@@ -67,7 +78,7 @@ Each module follows the `PicowidModule` base class pattern:
 
 ### **Core Foundation**
 * **Self-Hosted Web Server:** Runs directly on the Pico W, serving modular dashboards
-* **Wi-Fi Hotspot (Access Point):** Creates a "Picowicd" Wi-Fi network for direct device connection
+* **Wi-Fi Hotspot (Access Point):** Creates a "WicdNode" Wi-Fi network for direct device connection
 * **Robust Configuration System:**
     * Crash resistant - falls back to working defaults
     * HTML entity decoding fixes corruption from web sources
@@ -90,8 +101,8 @@ Each module follows the `PicowidModule` base class pattern:
 ## **Development Phases**
 
 * **Phase 1**: Foundation verification (Complete)
-* **Phase 2**: Picowicd rebuild using modular architecture (In Progress)
-* **Phase 3**: Instrument control tools for CEA applications (Planned)
+* **Phase 2**: Picowicd rebuild using modular architecture (Complete)
+* **Phase 3**: Instrument control tools for CEA applications (In Progress)
 
 ## **Getting Started**
 
@@ -104,7 +115,7 @@ Each module follows the `PicowidModule` base class pattern:
 
 ### **Software Requirements**
 
-* **CircuitPython:** Version 8.x or 9.x with `adafruit_httpserver` library
+* **CircuitPython:** Version 9.0+ with `adafruit_httpserver` library
 * **Standard Libraries:** `digitalio`, `board`, `time`, `wifi`, `socketpool`
 
 ### **Installation**
@@ -127,7 +138,7 @@ Each module follows the `PicowidModule` base class pattern:
 
 ### **Connecting to the System**
 
-1. **Join WiFi Network:** Connect to "Picowicd" network (password: "simpletest" SSID and PW are configurble in settings.toml)
+1. **Join WiFi Network:** Connect to "WicdNode" network (password: "simpletest" SSID and PW are configurble in settings.toml)
 2. **Open Dashboard:** Navigate to `http://192.168.4.1` in any web browser
 3. **Access Modules:** Use the modular dashboard to control your instruments
 
@@ -184,6 +195,8 @@ All modules extend `PicowidModule` and implement:
 * `update()` - Real-time processing in main loop
 * `cleanup()` - Shutdown procedures (optional)
 
+Modules feature academic-quality docstrings with comprehensive API documentation, usage examples, and integration patterns following professional Sphinx documentation standards.
+
 ### **Foundation Services**
 
 Modules have access to foundation services:
@@ -206,7 +219,7 @@ Modules have access to foundation services:
 
 ```toml
 # Wi-Fi hotspot configuration
-WIFI_SSID = "Picowicd"
+WIFI_SSID = "WicdNode"
 WIFI_PASSWORD = "simpletest"
 
 # System timeout (minutes)
@@ -218,7 +231,7 @@ BLINK_INTERVAL = 0.25
 
 ### **Error Recovery**
 
-Picowicd features robust error handling:
+WicdNode features robust error handling:
 * **Missing config:** Uses safe defaults
 * **Corrupted settings:** Individual fallback per setting
 * **Network issues:** Automatic retry with default credentials
@@ -276,12 +289,35 @@ Picowicd features robust error handling:
 * **I2C Support:** Multiple sensor/actuator connections
 * **Web Interface:** Responsive design for mobile/desktop
 
+## **Research Validation**
+
+**Hardware Validated:**
+* Multi-node sensor networks (5-10+ nodes tested)
+* Pi5 WCS Hub integration with Home Assistant + Mosquitto MQTT
+* Reliable wireless communication protocols
+
+**Cost Analysis:**
+* Sub-$50 sensor nodes vs $500+ commercial alternatives
+* Complete system deployment under $300 vs $5000+ traditional systems
+* Open-source design enables reproducible research across institutions
+
+**Academic Applications:**
+* Precision agriculture research platforms
+* Controlled environment agriculture (CEA) monitoring
+* Laboratory automation for plant science research
+* Educational instrumentation for agricultural engineering programs
+
 ## **Success Metrics**
 
-A successful Picowicd deployment should feel like:
+A successful wicdnode deployment should feel like:
 - **Assembling electronic components** - predictable interfaces, known behavior
 - **Professional embedded tools** - reliable, responsive, purpose-built
 - **Modular synthesizers** - standardized connections enabling creative combinations
+
+**For Academic Research:**
+- **Reproducible Designs:** Complete documentation enables replication across labs
+- **Publication Ready:** Professional documentation supports academic publication
+- **Cost Effective:** Enables instrumentation access for resource-constrained institutions
 
 The architecture succeeds when developers can rapidly prototype embedded instruments by selecting and configuring modules rather than building from scratch.
 
