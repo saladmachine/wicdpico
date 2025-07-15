@@ -8,7 +8,7 @@ WicdPico (wireless instrumentation and control device - Pico) transforms your Ra
 
 WicdPico operates in two distinct modes using the same hardware and codebase:
 
-### **📱 WicdMeter Mode: Standalone Wireless Instrument**
+### **WicdMeter Mode: Standalone Wireless Instrument**
 Configure as a self-contained wireless meter:
 - **Creates its own WiFi hotspot** - no existing network required
 - **Serves web-based control panel** - access from any phone, tablet, or laptop
@@ -17,7 +17,7 @@ Configure as a self-contained wireless meter:
 
 *Example: A handheld environmental meter that creates "MeterWiFi" hotspot. Connect your phone, navigate to 192.168.4.1, and control/monitor the instrument through a responsive web interface.*
 
-### **🌐 WicdNode Mode: Networked Sensor Node**  
+### **WicdNode Mode: Networked Sensor Node**  
 Configure as a node in larger instrumentation networks:
 - **Connects to existing WiFi** - joins your lab or facility network
 - **MQTT communication** - publishes data to central hub systems
