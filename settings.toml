@@ -2,7 +2,7 @@
 # Connect picowicd to Pi5 WCS Hub for academic publication
 
 # WiFi Configuration - Pi5 WCS Hub Network
-#WIFI_SSID = "joepardue"
+#WIFI_SSID = "wicdpico"
 #WIFI_PASSWORD = "pudden789"
 #WIFI_MODE = "CLIENT"
 WIFI_SSID = "PicoTest-Node00"

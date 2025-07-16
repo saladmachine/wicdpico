@@ -24,8 +24,8 @@
 		"emeraldwalk.runonsave": {
 			"commands": [
 				{
-					"match": "\\.py$",
-					"cmd": "cp \"${file}\" /media/joepardue/CIRCUITPY/"
+					"match": "\\.(py|toml|txt|json)$",
+					"cmd": "cp \"${file}\" /media/joepardue/CIRCUITPY/ && echo 'Copied ${fileBasename} to CIRCUITPY'"
 				}
 			]
 		},
