@@ -5,10 +5,9 @@ build:
   tools:
     python: "3.11"
 
-# This will make RTD use your default branch
+sphinx:
+  configuration: docs/conf.py
+
 python:
   install:
-    - requirements: requirements.txt  # adjust if your requirements file is elsewhere
-
-sphinx:
-  configuration: conf.py  # adjust path to your conf.py file
+    - requirements: requirements.txt
