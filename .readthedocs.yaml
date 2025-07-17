@@ -6,8 +6,7 @@ build:
     python: "3.11"
 
 sphinx:
-  configuration: docs/conf.py
-  fail_on_warning: false
+  configuration: conf.py
 
 python:
   install:
