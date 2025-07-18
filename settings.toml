@@ -5,13 +5,15 @@
 #WIFI_SSID = "wicdpico"
 #WIFI_PASSWORD = "pudden789"
 #WIFI_MODE = "CLIENT"
-WIFI_SSID = "PicoTest-Node00"
-WIFI_PASSWORD = "testpass123"
-WIFI_MODE = "AP"
+WIFI_SSID = "wicdhub"
+WIFI_PASSWORD = "pudden789"
+WIFI_MODE = "CLIENT"
 
 # MQTT Configuration - Pi5 Mosquitto Broker
 MQTT_BROKER = "192.168.99.1"
 MQTT_PORT = "1883"
+MQTT_USERNAME = "picowicd"
+MQTT_PASSWORD = "picowicd123"
 MQTT_NODE_ID = "node00"
 MQTT_PUBLISH_INTERVAL = "30"
 MQTT_KEEPALIVE = "60"

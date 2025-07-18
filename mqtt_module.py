@@ -34,6 +34,8 @@ Configuration (settings.toml)
 
     MQTT_BROKER = "192.168.99.1"
     MQTT_PORT = "1883"
+    MQTT_USERNAME = "picowicd"
+    MQTT_PASSWORD = "picowicd123"
     MQTT_NODE_ID = "node01"
     MQTT_PUBLISH_INTERVAL = "30"
     MQTT_TOPIC_BASE = "wcs"
@@ -162,6 +164,8 @@ class MQTTModule(PicowicdModule):
             # MQTT broker settings
             self.broker_host = os.getenv("MQTT_BROKER", "192.168.99.1")
             self.broker_port = int(os.getenv("MQTT_PORT", "1883"))
+            self.username = os.getenv("MQTT_USERNAME", None)
+            self.password = os.getenv("MQTT_PASSWORD", None)
             self.node_id = os.getenv("MQTT_NODE_ID", "node01")
             self.publish_interval = int(os.getenv("MQTT_PUBLISH_INTERVAL", "60"))
             self.keepalive = int(os.getenv("MQTT_KEEPALIVE", "60"))
@@ -180,6 +184,8 @@ class MQTTModule(PicowicdModule):
             # Use defaults
             self.broker_host = "192.168.99.1"
             self.broker_port = 1883
+            self.username = None
+            self.password = None
             self.node_id = "node01"
             self.publish_interval = 60
             self.keepalive = 60
@@ -193,16 +199,18 @@ class MQTTModule(PicowicdModule):
         Initialize MQTT client with callbacks and connection parameters.
         
         Creates MQTT client instance with proper socket pool, keepalive
-        settings, and callback function assignments.
+        settings, authentication, and callback function assignments.
         """
         try:
             # Create socket pool
             pool = socketpool.SocketPool(wifi.radio)
             
-            # Create MQTT client
+            # Create MQTT client with authentication
             self.mqtt_client = MQTT.MQTT(
                 broker=self.broker_host,
                 port=self.broker_port,
+                username=self.username,
+                password=self.password,
                 socket_pool=pool,
                 keep_alive=self.keepalive,
                 is_ssl=False  # No SSL for local broker
@@ -337,11 +345,10 @@ class MQTTModule(PicowicdModule):
     
     def get_sensor_data(self):
         """
-        Get sensor readings - mock data for now, easy to replace with real sensors.
+        Get sensor readings from real SHT45 hardware or fallback to mock data.
         
-        Generates realistic sensor data for testing and demonstration.
-        This method should be replaced with actual sensor reading code
-        when hardware sensors are integrated.
+        Attempts to get actual sensor readings from registered SHT45 module.
+        Falls back to mock data if SHT45 module is not available or fails.
         
         :return: Dictionary containing sensor readings
         :rtype: dict
@@ -350,7 +357,7 @@ class MQTTModule(PicowicdModule):
         
         * temperature: Temperature in Celsius
         * humidity: Humidity percentage  
-        * battery_voltage: Battery voltage
+        * battery_voltage: Battery voltage (simulated)
         * timestamp: Unix timestamp
         * node_id: Node identifier
         
@@ -363,10 +370,29 @@ class MQTTModule(PicowicdModule):
         import time
         import random
         
-        # Mock sensor data - replace this section with real sensor readings
         current_time = time.monotonic()
         
-        # Simulate realistic environmental data with some variation
+        # Try to get real sensor data from SHT45 module
+        try:
+            sht45_module = self.foundation.get_module("sht45")
+            if sht45_module and sht45_module.sensor_available:
+                reading = sht45_module.get_sensor_reading()
+                
+                if reading['success']:
+                    # Use real SHT45 data
+                    sensor_data = {
+                        "temperature": reading['temperature'],
+                        "humidity": reading['humidity'],
+                        "battery_voltage": round(3.7 + 0.3 * random.random(), 2),  # Still simulated
+                        "timestamp": int(current_time),
+                        "node_id": self.node_id
+                    }
+                    return sensor_data
+                    
+        except Exception as e:
+            self.foundation.startup_print(f"MQTT: Failed to get SHT45 data: {e}")
+        
+        # Fallback to mock data if SHT45 not available
         base_temp = 22.0  # Base temperature in Celsius
         base_humidity = 65.0  # Base humidity percentage
         
@@ -565,7 +591,7 @@ class MQTTModule(PicowicdModule):
             setButtonLoading('mqtt-publish-btn', true);
             serverRequest('/mqtt-publish')
                 .then(result => {{
-                    updateElement('mqtt-status', 'Publish: ' + result);
+                    updateElement('mqtt-status', 'Status: ' + result);
                 }})
                 .catch(error => {{
                     updateElement('mqtt-status', 'Error: ' + error.message);

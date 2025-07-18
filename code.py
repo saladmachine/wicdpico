@@ -6,6 +6,9 @@ import gc
 import time
 import wifi
 
+import supervisor
+supervisor.runtime.autoreload = False
+
 def main():
     try:
         print("=== PICOWICD SHT45 STEP 2 - WORKING ===")
@@ -25,7 +28,7 @@ def main():
             mqtt = MQTTModule(foundation)
             foundation.register_module("mqtt", mqtt)
             
-            from led_control import LEDControlModule
+            from led_control_module import LEDControlModule
             led = LEDControlModule(foundation)
             foundation.register_module("led", led)
             
