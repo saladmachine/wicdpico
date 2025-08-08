@@ -395,11 +395,11 @@ WicdPico features comprehensive error handling:
 ## **Development Roadmap**
 
 ### **Current Status**
-* ✅ Foundation architecture (complete)
-* ✅ Core sensor modules (SHT45, battery, RTC)
-* ✅ Communication modules (MQTT, LED)
-* ✅ Storage modules (SD card, file manager)
-* ✅ Dual-mode networking (client/AP)
+* Foundation architecture (complete)
+* Core sensor modules (SHT45, battery, RTC)
+* Communication modules (MQTT, LED)
+* Storage modules (SD card, file manager)
+* Dual-mode networking (client/AP)
 
 ### **Planned Enhancements**
 * **Advanced Sensors:** CO2, light, soil moisture modules
