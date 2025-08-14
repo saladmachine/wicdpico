@@ -11,24 +11,21 @@ supervisor.runtime.autoreload = False
 
 def main():
     try:
-        print("=== PICOWICD SHT45 STEP 2 - WORKING ===")
+        print("=== WICDPICO SHT45 STEP 2 - WORKING ===")
         
-        from foundation_core import PicowicdFoundation
-        foundation = PicowicdFoundation()
+        from foundation_core import WicdpicoFoundation
+        foundation = WicdpicoFoundation()
         
         if foundation.initialize_network():
             server_ip = "192.168.4.1" if foundation.wifi_mode == "AP" else str(wifi.radio.ipv4_address)
             
             # Load modules FIRST
-            from sht45_module import SHT45Module
+            from module_sht45 import SHT45Module
             sht45 = SHT45Module(foundation)
             foundation.register_module("sht45", sht45)
             
-            from mqtt_module import MQTTModule  
-            mqtt = MQTTModule(foundation)
-            foundation.register_module("mqtt", mqtt)
             
-            from led_control_module import LEDControlModule
+            from module_led_control import LEDControlModule
             led = LEDControlModule(foundation)
             foundation.register_module("led", led)
             
@@ -38,7 +35,7 @@ def main():
             @foundation.server.route("/", methods=['GET'])
             def serve_dashboard(request):
                 try:
-                    dashboard_html = foundation.render_dashboard("PicoWicd SHT45 Test")
+                    dashboard_html = foundation.render_dashboard("WicdPico SHT45 Test")
                     return Response(request, dashboard_html, content_type="text/html")
                 except Exception as e:
                     print(f"Dashboard error: {e}")

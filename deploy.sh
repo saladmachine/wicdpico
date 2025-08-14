@@ -9,7 +9,7 @@ if [ -z "$CIRCUITPY_PATH" ]; then
     exit 1
 fi
 
-echo "Deploying picowicd to $CIRCUITPY_PATH..."
+echo "Deploying wicdpico to $CIRCUITPY_PATH..."
 rsync -av lib/ "$CIRCUITPY_PATH/lib/"
 cp tests/test_led_blinky.py "$CIRCUITPY_PATH/code.py"
 echo "Deployment complete! Reset Pico W to run."

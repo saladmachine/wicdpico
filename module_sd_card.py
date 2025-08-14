@@ -5,12 +5,12 @@
 `sd_card_module`
 ====================================================
 
-SD Card control module for PicoWicd system.
+SD Card control module for WicdPico system.
 
 Provides web interface and management for SD card storage
 on Raspberry Pi Pico with CircuitPython.
 
-* Author(s): PicoWicd Development Team
+* Author(s): WicdPico Development Team
 
 Implementation Notes
 --------------------
@@ -26,7 +26,7 @@ Implementation Notes
 * Adafruit CircuitPython firmware for Raspberry Pi Pico 2 W
 * CircuitPython storage module
 * adafruit_httpserver
-* PicoWicd foundation system
+* WicdPico foundation system
 
 **Notes:**
 
@@ -39,22 +39,22 @@ Implementation Notes
 import storage
 import os
 import gc
-from module_base import PicowicdModule
+from module_base import WicdpicoModule
 from adafruit_httpserver import Request, Response
 
 __version__ = "0.0.0+auto.0"
-__repo__ = "https://github.com/picowicd/picowicd.git"
+__repo__ = "https://github.com/wicdpico/wicdpico.git"
 
 
-class SDCardModule(PicowicdModule):
+class SDCardModule(WicdpicoModule):
     """
-    SD Card Control Module for PicoWicd system.
+    SD Card Control Module for WicdPico system.
     
     Provides web interface and management for SD card storage.
     Handles card detection, mounting, and basic file operations.
     
-    :param foundation: PicoWicd foundation instance for system integration
-    :type foundation: PicoWicd
+    :param foundation: WicdPico foundation instance for system integration
+    :type foundation: WicdPico
     """
     
     def __init__(self, foundation):
@@ -64,8 +64,8 @@ class SDCardModule(PicowicdModule):
         Sets up SD card detection and mounting.
         Handles initialization errors gracefully.
         
-        :param foundation: PicoWicd foundation instance
-        :type foundation: PicoWicd
+        :param foundation: WicdPico foundation instance
+        :type foundation: WicdPico
         """
         super().__init__(foundation)
         self.name = "SD Card Control"

@@ -4,7 +4,7 @@ LED Control Module - Visual Status and User Interaction
 
 Provides comprehensive LED control functionality including manual toggle,
 automatic blinky patterns, and system status indication. Integrates with
-the picowicd foundation for web-based control and visual feedback.
+the wicdpico foundation for web-based control and visual feedback.
 
 Hardware Requirements
 --------------------
@@ -39,7 +39,7 @@ Usage Examples
 .. code-block:: python
 
     # Basic LED control setup
-    foundation = PicowicdFoundation()
+    foundation = WicdpicoFoundation()
     led_module = LEDControlModule(foundation)
     foundation.register_module("led", led_module)
     
@@ -60,10 +60,10 @@ Web Interface Features
 import digitalio
 import board
 import time
-from module_base import PicowicdModule
+from module_base import WicdpicoModule
 from adafruit_httpserver import Request, Response
 
-class LEDControlModule(PicowicdModule):
+class LEDControlModule(WicdpicoModule):
     """
     LED Control Module for visual status indication and user interaction.
     
@@ -71,15 +71,15 @@ class LEDControlModule(PicowicdModule):
     patterns, and web-based interface. Manages LED state transitions and
     prevents conflicting control modes.
     
-    :param foundation: PicoWicd foundation instance for system integration
-    :type foundation: PicowicdFoundation
+    :param foundation: WicdPico foundation instance for system integration
+    :type foundation: WicdpicoFoundation
     
     **Basic Usage:**
     
     .. code-block:: python
     
         # Initialize LED control
-        foundation = PicowicdFoundation()
+        foundation = WicdpicoFoundation()
         led_module = LEDControlModule(foundation)
         foundation.register_module("led", led_module)
         
@@ -114,7 +114,7 @@ class LEDControlModule(PicowicdModule):
         and configures blink timing from foundation configuration.
         
         :param foundation: Foundation instance for system integration
-        :type foundation: PicowicdFoundation
+        :type foundation: WicdpicoFoundation
         """
         super().__init__(foundation)
 

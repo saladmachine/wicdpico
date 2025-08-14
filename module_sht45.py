@@ -5,13 +5,13 @@
 `sht45_module`
 ====================================================
 
-SHT45 Temperature and Humidity Sensor Module for PicoWicd system.
+SHT45 Temperature and Humidity Sensor Module for WicdPico system.
 
 Provides comprehensive I2C access to all Adafruit SHT45 sensor parameters
 including temperature, humidity, precision modes, heater control, reset
 functionality, and advanced sensor features through web interface.
 
-* Author(s): PicoWicd Development Team
+* Author(s): WicdPico Development Team
 
 Implementation Notes
 --------------------
@@ -27,7 +27,7 @@ Implementation Notes
 * Adafruit CircuitPython firmware for Raspberry Pi Pico 2 W
 * adafruit_sht4x library
 * adafruit_httpserver
-* PicoWicd foundation system
+* WicdPico foundation system
 
 **Notes:**
 
@@ -50,7 +50,7 @@ LOG_SENSOR_READINGS = False     # Log each sensor reading to foundation
 import time
 import board
 import busio
-from module_base import PicowicdModule
+from module_base import WicdpicoModule
 from adafruit_httpserver import Request, Response
 
 # Try to import SHT4x library, create mock if not available
@@ -89,19 +89,19 @@ except ImportError:
     SHT4X_AVAILABLE = False
 
 __version__ = "0.0.0+auto.0"
-__repo__ = "https://github.com/picowicd/picowicd.git"
+__repo__ = "https://github.com/wicdpico/wicdpico.git"
 
 
-class SHT45Module(PicowicdModule):
+class SHT45Module(WicdpicoModule):
     """
-    SHT45 Temperature and Humidity Sensor Module for PicoWicd system.
+    SHT45 Temperature and Humidity Sensor Module for WicdPico system.
     
     Provides comprehensive web interface and management for SHT45 sensor hardware.
     Supports all measurement modes, heater settings, reset functionality, and 
     advanced sensor features available through the Adafruit SHT4x library.
     
-    :param foundation: PicoWicd foundation instance for system integration
-    :type foundation: PicowicdFoundation
+    :param foundation: WicdPico foundation instance for system integration
+    :type foundation: WicdpicoFoundation
     """
     
     def __init__(self, foundation):
@@ -111,8 +111,8 @@ class SHT45Module(PicowicdModule):
         Sets up module identification and configuration, then initializes
         I2C communication and sensor hardware.
         
-        :param foundation: PicoWicd foundation instance
-        :type foundation: PicowicdFoundation
+        :param foundation: WicdPico foundation instance
+        :type foundation: WicdpicoFoundation
         """
         super().__init__(foundation)
         self.name = "SHT45 Sensor"

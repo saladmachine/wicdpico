@@ -1,5 +1,5 @@
 class TemplateSystem:
-    """Centralized HTML template and styling system for picowicd"""
+    """Centralized HTML template and styling system for wicdpico"""
     
     def __init__(self):
         self.base_css = self._get_base_css()

@@ -1,7 +1,7 @@
 from adafruit_httpserver import Response
-from module_base import PicowidModule
+from module_base import WicdpicoModule
 
-class ConsoleMonitorModule(PicowidModule):
+class ConsoleMonitorModule(WicdpicoModule):
     def __init__(self, foundation):
         super().__init__(foundation)
         self.name = "Console Monitor"
@@ -55,7 +55,7 @@ class ConsoleMonitorModule(PicowidModule):
 
     def console_print(self, message):
         """Add message to console buffer"""
-        print(f"[Picowicd]: {message}")
+        print(f"[Wicdpico]: {message}")
         if self.monitor_enabled:
             self.console_buffer.append(message)
             if len(self.console_buffer) > 50:

@@ -10,8 +10,8 @@ import json
 from adafruit_httpserver import Request, Response
 
 try:
-    from module_base import PicowicdModule # Assuming PicowidModule is the correct base class name
-    BaseClass = PicowicdModule
+    from module_base import WicdpicoModule # Assuming PicowidModule is the correct base class name
+    BaseClass = WicdpicoModule
 except ImportError:
     BaseClass = object
 

@@ -1,14 +1,14 @@
 """
-Module Base - Foundation for PicoWicd Module System
+Module Base - Foundation for WicdPico Module System
 ===================================================
 
-Provides the base class and interface definition for all picowicd modules.
+Provides the base class and interface definition for all wicdpico modules.
 Establishes the standard pattern for module integration, web interface
-generation, and lifecycle management within the picowicd framework.
+generation, and lifecycle management within the wicdpico framework.
 
 Module Architecture
 ------------------
-All picowicd modules inherit from PicowicdModule and implement:
+All wicdpico modules inherit from WicdpicoModule and implement:
 
 * **Web Integration**: HTTP route registration for web interface
 * **Dashboard Generation**: HTML widget creation for unified dashboard
@@ -20,7 +20,7 @@ Usage Pattern
 .. code-block:: python
 
     # Create custom module
-    class MyModule(PicowicdModule):
+    class MyModule(WicdpicoModule):
         def __init__(self, foundation):
             super().__init__(foundation)
             self.name = "My Custom Module"
@@ -42,21 +42,21 @@ Integration Example
 .. code-block:: python
 
     # Register module with foundation
-    foundation = PicowicdFoundation()
+    foundation = WicdpicoFoundation()
     my_module = MyModule(foundation)
     foundation.register_module("custom", my_module)
 """
 
-class PicowicdModule:
+class WicdpicoModule:
     """
-    Base class for all picowicd modules.
+    Base class for all wicdpico modules.
     
     Provides the standard interface and integration pattern for modules
-    within the picowicd system. All modules should inherit from this class
+    within the wicdpico system. All modules should inherit from this class
     and implement the required methods for proper system integration.
     
-    :param foundation: PicoWicd foundation instance for system integration
-    :type foundation: PicowicdFoundation
+    :param foundation: WicdPico foundation instance for system integration
+    :type foundation: WicdpicoFoundation
     
     **Required Implementations:**
     
@@ -72,7 +72,7 @@ class PicowicdModule:
     .. code-block:: python
     
         # Standard module creation pattern
-        class CustomModule(PicowicdModule):
+        class CustomModule(WicdpicoModule):
             def __init__(self, foundation):
                 super().__init__(foundation)
                 self.name = "Custom Module"
@@ -92,7 +92,7 @@ class PicowicdModule:
         then perform module-specific initialization.
         
         :param foundation: Foundation instance for system services
-        :type foundation: PicowicdFoundation
+        :type foundation: WicdpicoFoundation
         """
         self.foundation = foundation
         self.enabled = False

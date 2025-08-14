@@ -5,12 +5,12 @@
 `rtc_control_module`
 ====================================================
 
-RTC (Real-Time Clock) control module for PicoWicd system.
+RTC (Real-Time Clock) control module for WicdPico system.
 
 Provides web interface and management for PCF8523 RTC hardware
 on Raspberry Pi Pico with CircuitPython.
 
-* Author(s): PicoWicd Development Team
+* Author(s): WicdPico Development Team
 
 Implementation Notes
 --------------------
@@ -26,7 +26,7 @@ Implementation Notes
 * Adafruit CircuitPython firmware for Raspberry Pi Pico 2 W
 * adafruit_pcf8523.pcf8523
 * adafruit_httpserver
-* PicoWicd foundation system
+* WicdPico foundation system
 
 **Notes:**
 
@@ -39,23 +39,23 @@ Implementation Notes
 import time
 import board
 import busio
-from module_base import PicowicdModule
+from module_base import WicdpicoModule
 from adafruit_httpserver import Request, Response
 from adafruit_pcf8523.pcf8523 import PCF8523
 
 __version__ = "0.0.0+auto.0"
-__repo__ = "https://github.com/picowicd/picowicd.git"
+__repo__ = "https://github.com/wicdpico/wicdpico.git"
 
 
-class RTCControlModule(PicowicdModule):
+class RTCControlModule(WicdpicoModule):
     """
-    RTC Control Module for PicoWicd system.
+    RTC Control Module for WicdPico system.
     
     Provides web interface and management for PCF8523 RTC hardware.
     Handles time reading, battery status monitoring, and power loss detection.
     
-    :param foundation: PicoWicd foundation instance for system integration
-    :type foundation: PicoWicd
+    :param foundation: WicdPico foundation instance for system integration
+    :type foundation: WicdPico
     
     **Quickstart: Importing and using the module**
     
@@ -65,11 +65,11 @@ class RTCControlModule(PicowicdModule):
     
         import busio
         import board
-        from foundation_core import PicoWicd
-        from rtc_control_module import RTCControlModule
+        from foundation_core import WicdPico
+        from module_rtc_control import RTCControlModule
         
         # Initialize foundation system
-        foundation = PicoWicd()
+        foundation = WicdPico()
         
         # Create RTC module
         rtc_module = RTCControlModule(foundation)
@@ -90,8 +90,8 @@ class RTCControlModule(PicowicdModule):
         Sets up I2C communication and PCF8523 RTC hardware.
         Handles initialization errors gracefully.
         
-        :param foundation: PicoWicd foundation instance
-        :type foundation: PicoWicd
+        :param foundation: WicdPico foundation instance
+        :type foundation: WicdPico
         """
         super().__init__(foundation)
         self.name = "RTC Control"
@@ -220,7 +220,7 @@ class RTCControlModule(PicowicdModule):
         console spam but maintains compatibility with foundation system.
         
         .. note::
-           This method is called periodically by the PicoWicd foundation.
+           This method is called periodically by the WicdPico foundation.
            Override this method to add custom periodic tasks.
         """
         # FIX: Commented out the body of the update method to stop printing "Live RTC" updates.

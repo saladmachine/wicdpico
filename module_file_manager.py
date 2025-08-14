@@ -1,8 +1,8 @@
 from adafruit_httpserver import Response
 import os
-from module_base import PicowidModule
+from module_base import WicdpicoModule
 
-class FileManagerModule(PicowidModule):
+class FileManagerModule(WicdpicoModule):
     def __init__(self, foundation):
         super().__init__(foundation)
         self.name = "File Manager"
