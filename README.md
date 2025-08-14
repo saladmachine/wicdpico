@@ -30,7 +30,7 @@ WicdPico is a modular platform for building I2C sensor instruments that serve in
 
 ## Modular System
 
-### Available Modules
+### Available Modules (more coming soon...)
 - **`module_sht45.py`** - Temperature/humidity sensor (SHT45)
 - **`module_led_control.py`** - Onboard LED control and status
 - **`module_rtc_control.py`** - Real-time clock (PCF8523)
@@ -113,7 +113,7 @@ This project follows a pragmatic approach optimized for CircuitPython constraint
 
 ## License
 
-MIT License - Build amazing sensor instruments!
+MIT License
 
 ---
 
