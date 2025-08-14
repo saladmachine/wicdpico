@@ -117,7 +117,7 @@ MIT License - Build amazing sensor instruments!
 
 ---
 
-Acknowledgments
+## Acknowledgments
 Built with CircuitPython and adafruit_httpserver.
 
 AI Assistance Note: This project, including aspects of its code (e.g., structure, debugging assistance, error handling enhancements) and the drafting of this README.md, was significantly assisted by large language models, specifically Gemini by Google and Claude by Anthropic. This collaboration highlights the evolving landscape of modern open-source development, demonstrating how AI tools can empower makers to bring complex projects to fruition and achieve robust, production-ready implementations.
