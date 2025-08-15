@@ -623,6 +623,10 @@ class SHT45Module(WicdpicoModule):
                 <strong>Heater:</strong> <span id="current-heater">{self.current_heater}</span>{last_reading}{error_display}
             </div>
             
+            <div id="sht45-status" class="status" style="margin-top: 10px; background: #e7f3ff; border-left: 4px solid #007bff;">
+                <strong>Ready:</strong> SHT45 Module - Step 8 reset functionality complete!
+            </div>
+            
             <div class="control-group">
                 <h4 style="margin: 10px 0 5px 0; color: #666;">Sensor Control</h4>
                 <button id="sht45-reading-btn" onclick="getSHT45Reading()" style="background: #007bff;">Get Reading</button>
@@ -643,10 +647,6 @@ class SHT45Module(WicdpicoModule):
                 <button id="heater-low-btn" onclick="setSHT45Heater('LOW_1S')" style="background: #20c997;">Low 1s</button>
                 <button id="heater-med-btn" onclick="setSHT45Heater('MED_1S')" style="background: #fd7e14;">Med 1s</button>
                 <button id="heater-high-btn" onclick="setSHT45Heater('HIGH_1S')" style="background: #dc3545;">High 1s</button>
-            </div>
-            
-            <div id="sht45-status" class="status" style="margin-top: 10px; background: #e7f3ff; border-left: 4px solid #007bff;">
-                <strong>Ready:</strong> SHT45 Module - Step 8 reset functionality complete!
             </div>
         </div>
 
