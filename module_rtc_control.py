@@ -121,6 +121,7 @@ class RTCControlModule(WicdpicoModule):
         **Available Routes:**
         
         * ``POST /rtc-status`` - Get current RTC status including time, battery, and power loss status
+        * ``POST /rtc-set-time`` - Set RTC time from browser's current time
         """
         @server.route("/rtc-status", methods=['POST'])
         def rtc_status(request: Request):
@@ -155,18 +156,63 @@ class RTCControlModule(WicdpicoModule):
                 else:
                     status_prefix = "RTC Status: "
 
-                formatted_time = f"{self.days[current_time.tm_wday]} {current_time.tm_mon}/{current_time.tm_mday}/{current_time.tm_year} {current_time.tm_hour:02d}:{current_time.tm_min:02d}:{current_time.tm_sec:02d}"
+                formatted_time = self.days[current_time.tm_wday] + " " + str(current_time.tm_mon) + "/" + str(current_time.tm_mday) + "/" + str(current_time.tm_year) + " " + "{:02d}".format(current_time.tm_hour) + ":" + "{:02d}".format(current_time.tm_min) + ":" + "{:02d}".format(current_time.tm_sec)
 
-                status_text = f"Time: {formatted_time}<br>"
-                status_text += f"Battery Low: {'Yes' if battery_low else 'No'}<br>"
-                status_text += f"Lost Power: {'Yes' if lost_power else 'No'}"
+                status_text = "Time: " + formatted_time + "<br>"
+                status_text += "Battery Low: " + ("Yes" if battery_low else "No") + "<br>"
+                status_text += "Lost Power: " + ("Yes" if lost_power else "No")
 
-                self.foundation.startup_print(f"{status_prefix}{formatted_time}, Bat Low: {battery_low}, Lost Pwr: {lost_power}")
+                self.foundation.startup_print(status_prefix + formatted_time + ", Bat Low: " + str(battery_low) + ", Lost Pwr: " + str(lost_power))
 
                 return Response(request, status_text, content_type="text/html")
 
             except Exception as e:
-                error_msg = f"Error reading/setting RTC: {str(e)}"
+                error_msg = "Error reading/setting RTC: " + str(e)
+                self.foundation.startup_print(error_msg)
+                return Response(request, error_msg, content_type="text/plain")
+
+        @server.route("/rtc-set-time", methods=['POST'])
+        def rtc_set_time(request: Request):
+            """
+            Handle RTC time setting requests from browser.
+            
+            Expects JSON data with Unix timestamp from browser's current time.
+            Converts to struct_time and sets RTC hardware.
+            
+            :param request: HTTP request object with JSON time data
+            :type request: Request
+            :return: HTTP response with success/error message
+            :rtype: Response
+            """
+            try:
+                if not self.rtc_available:
+                    return Response(request, "RTC not available", content_type="text/plain")
+
+                # Parse JSON from request body
+                import json
+                try:
+                    data = json.loads(request.body.decode('utf-8'))
+                    unix_timestamp = int(data['timestamp'])
+                except (json.JSONDecodeError, KeyError, ValueError) as e:
+                    return Response(request, "Invalid JSON data: " + str(e), content_type="text/plain")
+
+                # Convert Unix timestamp to struct_time
+                # CircuitPython has time.localtime() - use it directly
+                new_time = time.localtime(unix_timestamp)
+                
+                # Set the RTC
+                self.rtc.datetime = new_time
+                
+                # Verify the time was set
+                current_time = self.rtc.datetime
+                formatted_time = self.days[current_time.tm_wday] + " " + str(current_time.tm_mon) + "/" + str(current_time.tm_mday) + "/" + str(current_time.tm_year) + " " + "{:02d}".format(current_time.tm_hour) + ":" + "{:02d}".format(current_time.tm_min) + ":" + "{:02d}".format(current_time.tm_sec)
+                
+                success_msg = "RTC time set successfully to: " + formatted_time
+                self.foundation.startup_print(success_msg)
+                return Response(request, success_msg, content_type="text/plain")
+
+            except Exception as e:
+                error_msg = "Error setting RTC time: " + str(e)
                 self.foundation.startup_print(error_msg)
                 return Response(request, error_msg, content_type="text/plain")
 
@@ -185,8 +231,10 @@ class RTCControlModule(WicdpicoModule):
             <h3>RTC Control</h3>
             <div class="control-group">
                 <button id="rtc-status-btn" onclick="getRTCStatus()">Get RTC Status</button>
+                <button id="rtc-set-time-btn" onclick="setRTCTime()">Set Time from Browser</button>
             </div>
             <p id="rtc-display-status">RTC Status: Click button</p>
+            <p id="rtc-set-status"></p>
         </div>
 
         <script>
@@ -207,6 +255,47 @@ class RTCControlModule(WicdpicoModule):
                     btn.disabled = false;
                     btn.textContent = 'Get RTC Status';
                     document.getElementById('rtc-display-status').textContent = 'Error: ' + error.message;
+                });
+        }
+
+        // JavaScript for Set RTC Time
+        function setRTCTime() {
+            const btn = document.getElementById('rtc-set-time-btn');
+            const statusElement = document.getElementById('rtc-set-status');
+            
+            btn.disabled = true;
+            btn.textContent = 'Setting Time...';
+            statusElement.textContent = '';
+
+            // Get current browser LOCAL time as Unix timestamp (seconds since epoch)
+            // Adjust for timezone offset to send local time instead of UTC
+            const now = new Date();
+            const timezoneOffsetMs = now.getTimezoneOffset() * 60 * 1000;
+            const localTimeMs = now.getTime() - timezoneOffsetMs;
+            const currentTime = Math.floor(localTimeMs / 1000);
+            
+            // Send time to Pico
+            fetch('/rtc-set-time', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    timestamp: currentTime
+                })
+            })
+                .then(response => response.text())
+                .then(result => {
+                    btn.disabled = false;
+                    btn.textContent = 'Set Time from Browser';
+                    statusElement.textContent = result;
+                    statusElement.style.color = 'green';
+                })
+                .catch(error => {
+                    btn.disabled = false;
+                    btn.textContent = 'Set Time from Browser';
+                    statusElement.textContent = 'Error: ' + error.message;
+                    statusElement.style.color = 'red';
                 });
         }
         </script>

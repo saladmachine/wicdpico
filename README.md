@@ -13,6 +13,7 @@ WicdPico is a modular platform for building I2C sensor instruments that serve in
 ✅ **Modular Architecture** - Mix and match sensor/control modules  
 ✅ **Built-in Web IDE** - Edit code directly through web interface  
 ✅ **Data Logging** - Timestamped data to SD card  
+✅ **RTC Time Sync** - Browser-based time synchronization for accurate timestamps  
 ✅ **I2C Sensor Support** - Temperature, humidity, CO2, light sensors  
 
 ## Quick Start
@@ -33,9 +34,10 @@ WicdPico is a modular platform for building I2C sensor instruments that serve in
 ### Available Modules (more coming soon...)
 - **`module_sht45.py`** - Temperature/humidity sensor (SHT45)
 - **`module_led_control.py`** - Onboard LED control and status
-- **`module_rtc_control.py`** - Real-time clock (PCF8523)
+- **`module_rtc_control.py`** - Real-time clock (PCF8523) with browser time sync
 - **`module_sd_card.py`** - SD card data logging
-- **`module_battery_monitor.py`** - Battery voltage monitoring
+- **`module_battery_monitor.py`** - Internal VSYS voltage monitoring with load testing
+- **`module_water_level.py`** - Water level detection (FS-IR02B sensor)
 - **`module_file_manager.py`** - Web-based file editor
 - **`module_console_monitor.py`** - Web-based REPL console
 
@@ -45,6 +47,18 @@ WicdPico is a modular platform for building I2C sensor instruments that serve in
 ```bash
 # Test single sensor
 cp templates/code_sht45_only.py code.py
+
+# Test water level sensor
+cp code_water_level.py code.py
+
+# Test battery monitoring
+cp code_battery_monitor.py code.py
+
+# Test RTC time synchronization
+cp code_rtc_time_sync_test.py code.py
+
+# Test SD card with PicoBell Adalogger
+cp code_sd_card_test.py code.py
 
 # Test web IDE  
 cp templates/code_ide_complete.py code.py
@@ -68,7 +82,10 @@ cp templates/code_production.py code.py
 
 **🌡️ Environmental Monitor** - SHT45 + RTC + SD logging  
 **🔧 Web-Based IDE** - Code editor + file manager + console  
-**🔋 Battery Meter** - Voltage monitoring + status dashboard  
+**🔋 Battery Meter** - Internal VSYS voltage monitoring + load testing  
+**💧 Water Level Monitor** - FS-IR02B sensor with refill event logging  
+**⏰ RTC Time Sync** - Browser-based time synchronization for field use  
+**💾 SD Card Test** - PicoBell Adalogger SPI mounting with file download validation  
 **📊 Multi-Sensor Dashboard** - Multiple I2C devices on one interface  
 
 *Detailed examples and hardware setup guides coming soon in `/docs/examples/`*
