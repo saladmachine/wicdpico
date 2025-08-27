@@ -1,6 +1,7 @@
-# code.py - Working version for SHT45 Step 2
+# code_battery_monitor.py - Battery Monitor Test with Internal VSYS
 """
-Test SHT45 Step 2 with working dashboard
+Test Battery Monitor with internal VSYS voltage monitoring.
+Provides load testing and voltage logging capabilities.
 """
 import gc
 import time
@@ -11,7 +12,7 @@ supervisor.runtime.autoreload = False
 
 def main():
     try:
-        print("=== WICDPICO SHT45 STEP 2 - WORKING ===")
+        print("=== WICDPICO BATTERY MONITOR - INTERNAL VSYS ===")
         
         from foundation_core import WicdpicoFoundation
         foundation = WicdpicoFoundation()
@@ -19,15 +20,18 @@ def main():
         if foundation.initialize_network():
             server_ip = "192.168.4.1" if foundation.wifi_mode == "AP" else str(wifi.radio.ipv4_address)
             
-            # Load modules FIRST
-            from module_sht45 import SHT45Module
-            sht45 = SHT45Module(foundation)
-            foundation.register_module("sht45", sht45)
+            # Load Battery Monitor module
+            from module_battery_monitor import BatteryMonitorModule
+            battery = BatteryMonitorModule(foundation)
+            foundation.register_module("battery", battery)
             
-            
+            # Load LED control module for load testing
             from module_led_control import LEDControlModule
             led = LEDControlModule(foundation)
             foundation.register_module("led", led)
+            
+            # Connect LED module to battery monitor for load testing
+            battery.led_module = led
             
             # Fix foundation dashboard route
             from adafruit_httpserver import Response
@@ -35,17 +39,43 @@ def main():
             @foundation.server.route("/", methods=['GET'])
             def serve_dashboard(request):
                 try:
-                    dashboard_html = foundation.render_dashboard("WicdPico SHT45 Test")
+                    dashboard_html = foundation.render_dashboard("WicdPico Battery Monitor Test")
                     return Response(request, dashboard_html, content_type="text/html")
                 except Exception as e:
-                    print(f"Dashboard error: {e}")
-                    return Response(request, f"<h1>Dashboard Error</h1><p>{e}</p>", content_type="text/html")
+                    print("Dashboard error: " + str(e))
+                    return Response(request, "<h1>Dashboard Error</h1><p>" + str(e) + "</p>", content_type="text/html")
             
             foundation.start_server()
             
-            print(f"✓ Dashboard ready at: http://{server_ip}")
-            print("✓ SHT45 hardware detected and working!")
-            print("✓ Check dashboard for sensor status")
+            print("✓ Dashboard ready at: http://" + server_ip)
+            print("✓ Battery monitor using internal VSYS monitoring")
+            
+            if battery.voltage_available:
+                initial_voltage = battery.get_voltage()
+                if initial_voltage:
+                    print("✓ Initial voltage reading: " + str(initial_voltage) + "V")
+            else:
+                print("✗ Voltage monitoring unavailable")
+            
+            print("")
+            print("Hardware Setup:")
+            print("- Uses internal VOLTAGE_MONITOR pin")
+            print("- No external ADC required")
+            print("- Battery connects to VSYS rail")
+            print("")
+            print("Test Features:")
+            print("- Real-time voltage monitoring")
+            print("- High-power load testing (LED + CPU load)")
+            print("- Voltage logging with web display")
+            print("- Web-based control interface")
+            print("")
+            print("Usage Instructions:")
+            print("1. Connect to WiFi hotspot: PicoTest-Node00")
+            print("2. Open browser to: http://" + server_ip)
+            print("3. Click 'Get Voltage' for current battery reading")
+            print("4. Click 'Toggle Load Test' to start/stop power consumption test")
+            print("5. Click 'Toggle Logging' to start/stop voltage data collection")
+            print("6. Load test uses rapid LED blinking + CPU activity")
             
             # Main loop
             while True:
@@ -61,7 +91,7 @@ def main():
     except KeyboardInterrupt:
         print("Stopping...")
     except Exception as e:
-        print(f"✗ Error: {e}")
+        print("✗ Error: " + str(e))
         import sys
         sys.print_exception(e)
 

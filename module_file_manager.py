@@ -32,10 +32,23 @@ class FileManagerModule(WicdpicoModule):
     def list_files(self, request):
         files = []
         try:
-            for file in os.listdir("/"):
-                files.append(file)
-        except OSError:
-            pass
+            # Try to list SD card files first (if mounted)
+            sd_path = "/sd"
+            try:
+                if os.path.exists(sd_path):
+                    for file in os.listdir(sd_path):
+                        files.append(f"SD: {file}")
+            except OSError:
+                pass
+            
+            # Also show data files from root (where CSV might be saved)
+            try:
+                for file in os.listdir("/"):
+                    # Only show data files, not system files
+                    if file.endswith(('.csv', '.log', '.txt', '.json')):
+                        files.append(file)
+            except OSError:
+                pass
 
         if files:
             file_list = "\n".join(files)
