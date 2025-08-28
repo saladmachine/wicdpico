@@ -1,0 +1,180 @@
+# Claude Context - WicdPico Project
+
+## Context Document Structure
+
+**Section 1: What the Meatsack Thinks He Wants**
+- Project goals, requirements, and human-defined objectives
+- Target audience, constraints, and success criteria
+- May contain biases, unrealistic expectations, or incomplete understanding
+
+**Section 2: What We've Done So Far** 
+- Actual progress, working code, tested approaches
+- Git history, current system state, proven functionality
+- Reality-based assessment of what actually works
+
+**Section 3: Methods That Have Improved Meatsack/AI Collaboration**
+- Lessons learned about AI bias and how to counter it
+- Successful collaboration patterns and failure modes to avoid
+- Process improvements and decision-making frameworks
+
+**Section 4: Prompts to Modify AI Behavior**
+- Specific commands to counter AI people-pleasing bias
+- Reality-checking requests and constraint-enforcement techniques
+- Meta-instructions for better AI guidance
+
+---
+
+# Section 1: What the Meatsack Thinks He Wants
+
+## Core Mission
+Development of a wireless I&C (Instrumentation & Control) system using Raspberry Pi Pico 2 W that creates standalone devices serving virtual control panels (VCP) via web browser - no phone apps required. Built with AI collaboration and designed for makers, enthusiasts, students, and researchers.
+
+## Target Audience & Real Constraints
+- **Primary**: Academic researchers needing Arduino-level accessible tools for serious research
+- **Reality**: Resource-constrained scientists, smart makers, graduate students with "more curiosity and energy than money"
+- **Examples**: Academic labs with IoT restrictions, developing region researchers, motivated cannabis growers, 3rd world scientists researching local problems
+- **Budget**: Absolute minimum cost while maintaining research reliability (~$200 total)
+
+## Immediate Applications
+**Primary Demo**: "Dark Box" Growth Chamber Application
+- **Size**: 50cm cube light-tight chamber for UV testing
+- **Research Context**: Sarah's acetate-based plant growth experiments (no photosynthesis)
+- **I&C Requirements**: CO2, temperature, humidity monitoring; light presence detection; fan speed control
+- **Control Logic**: Maintain internal/external sensor readings within defined ranges via minimal fan operation
+- **Data**: Log to SD card, upload to VCP periodically
+- **Goal**: Demonstrate WicdPico system for HardwareX publication
+
+**Scaling Target**: Up to 20 nodes maximum (10-20 growth chamber CEA systems)
+- Light quality/intensity, temperature, humidity, CO2 monitoring
+- Fan speed, hydroponic bubbler rate control
+- Full controlled environment agriculture instrumentation
+
+## Technical Architecture Decisions
+- **Platform**: Raspberry Pi Pico 2 W (could adapt to ESP32/Arduino+WiFi but keeping simple)
+- **Connectivity**: I2C devices for prototyping without soldering/PCBs
+- **Software**: CircuitPython with Adafruit libraries and ecosystem
+- **Interface**: Browser-based VCP (no phone apps), accessible via any device
+- **Hub/Node**: **REJECTED** - caused analysis paralysis, focus on standalone devices
+
+## Publication & Timeline Goals
+- **Target**: HardwareX article within 6 months
+- **Focus**: WicdPico I&C system demonstrated via dark box application
+- **Format**: 2000-word technical guide enabling replication by target audience
+- **Data Quality**: Must produce publication-grade, peer-review defensible results
+- **Maintenance**: Maximum 2 hours/week ongoing maintenance
+
+**Key Decision Filter**: Does this approach help a smart researcher with $200 collect publication-quality environmental data for 6 months with minimal technical support?
+
+---
+
+# Section 2: What We've Done So Far
+
+## Current System State (2025-08-28)
+- **Platform**: Raspberry Pi Pico 2 W with CircuitPython
+- **Architecture**: Modular system with web interface
+- **Network**: WiFi hotspot mode (PicoTest-Node00) at 192.168.4.1
+- **Git Status**: Clean foundation after removing MQTT experiment files
+- **Last Good Commit**: a2cb546 "Fix battery monitor module and add test file"
+
+## Core Architecture Files
+- **foundation_core.py**: Core framework (recently cleaned of MQTT additions)
+- **module_base.py**: Base class for all modules
+- **code.py**: Main application entry point
+- **settings.toml**: Configuration file
+
+## Available Sensor Modules (Working)
+- module_sht45.py: Temperature/humidity (SHT45)
+- module_scd41.py: CO2, temp, humidity (SCD41) 
+- module_bh1750.py: Digital light sensor (BH1750)
+- module_led_control.py: Onboard LED control
+- module_rtc_control.py: Real-time clock (PCF8523)
+- module_sd_card.py: SD card data logging
+- module_battery_monitor.py: Battery voltage monitoring
+- module_file_manager.py: Web-based file editor
+- module_console_monitor.py: Web-based REPL console
+- module_water_level.py: Water level detection
+
+## Current HTTP API Structure
+- **Base**: adafruit_httpserver.Server on port 80, AP mode at 192.168.4.1
+- **Main endpoint**: `GET /` returns HTML dashboard with all module widgets
+- **Module system**: Each module can register custom routes via `register_routes(server)`
+- **Data format**: Currently HTML-focused, but modules have structured data methods like `read_sensor()`
+- **Foundation**: Solid architecture ready for REST APIs if needed, but not required
+
+## Hardware Configuration
+- I2C Bus: GP4 (SDA), GP5 (SCL)
+- SD Card: SPI interface
+- Power: USB or battery via STEMMA connector
+
+## Key Features (Working)
+- Standalone WiFi hotspot operation
+- Web-based dashboard and control
+- Modular sensor architecture
+- Built-in web IDE for live coding
+- Data logging to SD card
+- Real-time sensor monitoring
+
+---
+
+# Section 3: Methods That Have Improved Meatsack/AI Collaboration
+
+## Critical Lessons Learned
+
+### AI Collaboration Pitfalls Identified
+- **People-Pleasing Bias**: AI has inherent tendency to support human preferences rather than challenge with reality-based constraints
+- **Architecture Paralysis**: Hub/node complexity discussions led to circular decision-making and "twilight zone neurotic zones"
+- **False Authority**: AI presents web search summaries as definitive engineering guidance without real-world validation
+- **Directional Flip-Flopping**: MQTT → no MQTT → SCADA polling → back to MQTT based on latest search results
+
+### Successful Collaboration Patterns
+- **Focus Discipline**: Single demo application (dark box) rather than premature scaling complexity
+- **Proven over Perfect**: Working simple solutions beat elegant complex ones that fail
+- **Reality-Based Constraints**: Define specific requirements before asking for solutions
+- **Working System First**: "What specific problem are you trying to solve that the current system doesn't handle?"
+
+### Process Improvements
+- **Constraint-First Problem Definition**: Set concrete success criteria before exploring solutions
+- **Timebox Analysis**: Set limits on how long to spend on architectural decisions
+- **Avoid Architecture Tourism**: If current approach works, require strong justification for changes
+
+## Decision Framework
+**Key Decision Filter**: Does this approach help a smart researcher with $200 collect publication-quality environmental data for 6 months with minimal technical support?
+
+---
+
+# Section 4: Prompts to Modify AI Behavior
+
+## Reality-Checking Commands
+- "Look at what people are actually doing and use that to evaluate the wisdom of various approaches"
+- "Show me 3 GitHub repos doing similar small-scale sensor networks" (specific examples vs. generic advice)
+- "What would actually break if we chose approach X?" (failure mode analysis)
+- "The WicdPico system already works. What specific problem are you trying to solve that it doesn't handle?"
+
+## Bias-Countering Instructions
+- "I need you to actively push back against my biases and preferences"
+- "Tell me when I'm asking questions that have 'it depends' answers without sufficient context"
+- "Challenge me when I'm solution-shopping instead of problem-solving"
+- "Recognize when I'm asking architecture questions that require domain knowledge you don't have"
+
+## Meta-Instructions for Better AI Guidance
+- "Avoid providing seemingly authoritative responses about what 'people are doing' based on web searches alone"
+- "When I ask for 'best practices,' remind me to define specific constraints first"
+- "If you find contradictory information in searches, say so explicitly rather than trying to synthesize"
+- "Distinguish between what sounds good theoretically vs. what works in practice for small-scale projects"
+
+## Development Instructions
+- Before writing any new code, examine the existing codebase using Read, Grep, or Glob tools to understand actual patterns
+- Never make assumptions about code structure - always verify by reading relevant files first
+- Never create placeholder, mock, or demonstration code - only implement real, functional features
+- If creating non-functional interim steps would help, explicitly ask permission and explain what you're building and why
+
+## Progress Tracking Instructions
+- Use TodoWrite tool for complex multi-step tasks to track progress and demonstrate thoroughness
+- Update context document bottom with new learnings as work progresses
+- Commit context changes to git for crash recovery
+
+---
+
+# Progress Log
+
+*New learnings and developments will be appended here as work continues...*
