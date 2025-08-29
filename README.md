@@ -4,7 +4,7 @@
 
 ## Overview
 
-WicdPico is a modular platform for building I2C sensor instruments that serve interactive web dashboards. Perfect for environmental monitoring, data logging, and laboratory instrumentation - all accessible through any web browser.
+WicdPico is a modular platform for building I2C sensor instruments that serve interactive web dashboards. Suitable for environmental monitoring, data logging, and laboratory instrumentation - all accessible through any web browser.
 
 ## Key Features
 
@@ -31,11 +31,14 @@ WicdPico is a modular platform for building I2C sensor instruments that serve in
 
 ## Modular System
 
-### Available Modules (more coming soon...)
+### Available Modules
 - **`module_sht45.py`** - Temperature/humidity sensor (SHT45)
+- **`module_scd41.py`** - CO2, temperature, humidity sensor (SCD41)
+- **`module_bh1750.py`** - Digital light sensor (BH1750)
 - **`module_led_control.py`** - Onboard LED control and status
 - **`module_rtc_control.py`** - Real-time clock (PCF8523) with browser time sync
 - **`module_sd_card.py`** - SD card data logging
+- **`module_sd_card_test.py`** - SD card testing utilities
 - **`module_battery_monitor.py`** - Internal VSYS voltage monitoring with load testing
 - **`module_water_level.py`** - Water level detection (FS-IR02B sensor)
 - **`module_file_manager.py`** - Web-based file editor
@@ -45,8 +48,14 @@ WicdPico is a modular platform for building I2C sensor instruments that serve in
 
 **1. Individual Module Testing**
 ```bash
-# Test single sensor
-cp templates/code_sht45_only.py code.py
+# Test temperature/humidity sensor
+cp code_sht45.py code.py
+
+# Test CO2 sensor
+cp code_scd41.py code.py
+
+# Test light sensor
+cp code_bh1750.py code.py
 
 # Test water level sensor
 cp code_water_level.py code.py
@@ -59,18 +68,13 @@ cp code_rtc_time_sync_test.py code.py
 
 # Test SD card with PicoBell Adalogger
 cp code_sd_card_test.py code.py
-
-# Test web IDE  
-cp templates/code_ide_complete.py code.py
 ```
 
 **2. Multi-Module Combinations** 
 ```bash
-# Data logging setup
-cp templates/code_sht45_rtc_sd.py code.py
-
-# Full production system
-cp templates/code_production.py code.py
+# Create custom code.py with desired modules
+# See existing code_*.py files for examples
+# Modify module selections in code.py as needed
 ```
 
 **3. Custom Module Development**
@@ -99,10 +103,8 @@ wicdpico/
 ├── module_base.py              # Module base class
 ├── settings.toml               # Configuration
 ├── module_*.py                 # All sensor/control modules
-└── templates/                  # Code configurations (coming soon)
-    ├── code_sht45_only.py     # Single sensor test
-    ├── code_ide_complete.py   # Web IDE setup
-    └── code_production.py     # All modules
+├── code_*.py                   # Example configurations
+└── claude_context.txt          # Development context and guidelines
 ```
 
 ## Hardware Compatibility

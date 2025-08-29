@@ -177,4 +177,35 @@ Development of a wireless I&C (Instrumentation & Control) system using Raspberry
 
 # Progress Log
 
-*New learnings and developments will be appended here as work continues...*
+## Session 2025-08-29: Hub/Node Architecture Decision & README Updates
+
+### Key Decisions Made
+- **Hub/Node Architecture**: CONFIRMED separate repository approach based on real-world IoT project analysis
+- **Research Context**: 10 growth chambers for academic research project requiring data aggregation and remote access
+- **MQTT Status**: Remains rejected for now, polling existing web interfaces deemed sufficient for 10-node scale
+- **Repository Structure**: Keep WicdPico focused on node firmware, create separate `wicdpico-hub` repo later
+
+### Analysis Completed  
+- **IoT Project Research**: Analyzed ESPHome/Home Assistant, Node-RED, industrial IoT patterns
+- **Real-World Practice**: Major IoT projects use separate repos for hub vs node components
+- **Technical Rationale**: Different tech stacks (CircuitPython vs Python), deployment models, update cycles
+
+### README.md Updates Applied
+- **Module List**: Added missing `module_scd41.py`, `module_bh1750.py`, `module_sd_card_test.py`
+- **Development Workflow**: Fixed examples to reference actual files, removed non-existent template references
+- **File Structure**: Corrected to reflect actual repo structure, added `claude_context.txt`
+- **Tone Adjustments**: Removed ideological language, kept focus on technical capabilities and academic applications
+- **Status**: README now accurately reflects current system state
+
+### Collaboration Lessons
+- **Bias Recognition**: Successfully identified and countered AI people-pleasing tendency on architecture decisions
+- **Research-Based Decisions**: Used actual IoT project examples rather than theoretical "best practices"
+- **Focus Discipline**: Avoided analysis paralysis by setting clear constraints and decision criteria
+- **Political Neutrality**: Kept technical documentation free of ideological positioning
+
+### Next Steps Identified
+- Hub development when needed for 10-chamber research project
+- Remote access implementation for "Paris access" requirement  
+- Continued focus on dark box demo for HardwareX publication
+
+*Session demonstrates successful application of anti-bias techniques and research-based decision making.*
