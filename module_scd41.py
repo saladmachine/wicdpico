@@ -58,61 +58,12 @@ import busio
 from module_base import WicdpicoModule
 from adafruit_httpserver import Request, Response
 
-# Try to import SCD4x library, create mock if not available
+# Remove mock data code
 try:
     import adafruit_scd4x
     SCD4X_AVAILABLE = True
 except ImportError:
-    print("Warning: adafruit_scd4x library not found - using mock for testing")
-    # Create mock classes for testing without hardware
-    class MockSCD4x:
-        def __init__(self, i2c):
-            self.temperature_offset = 4.0
-            self.altitude = 0
-            self.automatic_self_calibration = True
-            self.data_ready = True
-            
-        @property
-        def CO2(self):
-            import random
-            return int(400 + random.random() * 1000)  # 400-1400 ppm
-            
-        @property
-        def temperature(self):
-            import random
-            return 22.0 + random.random() * 8.0  # 22-30°C
-            
-        @property
-        def relative_humidity(self):
-            import random
-            return 40.0 + random.random() * 30.0  # 40-70%
-            
-        def start_periodic_measurement(self):
-            pass
-            
-        def stop_periodic_measurement(self):
-            pass
-            
-        def measure_single_shot(self):
-            pass
-            
-        def reinit(self):
-            pass
-            
-        def factory_reset(self):
-            pass
-            
-        def force_calibration(self, co2_ppm):
-            pass
-            
-        @property
-        def serial_number(self):
-            return [0x1234, 0x5678, 0x9ABC]
-    
-    # Create mock module
-    class adafruit_scd4x:
-        SCD4X = MockSCD4x
-    
+    print("Error: adafruit_scd4x library not found. SCD41 sensor will not function.")
     SCD4X_AVAILABLE = False
 
 __version__ = "0.0.0+auto.0"
@@ -522,10 +473,10 @@ class SCD41Module(WicdpicoModule):
             self.scd41.measure_single_shot()
             
             # Wait for measurement to complete (about 5 seconds)
-            time.sleep(5.5)
+            time.sleep(5.5);
             
             # Get the reading
-            reading = self.get_sensor_reading()
+            reading = self.get_sensor_reading();
             
             self.foundation.startup_print("SCD41 single shot measurement completed")
             self.status_message = "Single shot measurement taken"
