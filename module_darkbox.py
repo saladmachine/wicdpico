@@ -536,7 +536,7 @@ class DarkBoxModule(WicdpicoModule):
                     </head>
                     <body>
                         <!-- Removed: Page generated at: {timestamp} -->
-                        {darkbox.get_dashboard_html()}
+                        {darkbox.get_dashboard_html(self)}
                         <div class="control-group">
                             <button onclick="window.location.href='/calibration'">CO2 Calibration</button>
                             <button onclick="fetch('/darkbox-clear-events', {{method:'POST'}}).then(()=>window.location.reload())">Clear Light Events</button>
