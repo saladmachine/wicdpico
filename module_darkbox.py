@@ -527,8 +527,6 @@ class DarkBoxModule(WicdpicoModule):
             @foundation.server.route("/", methods=['GET'])
             def serve_dashboard(request):
                 try:
-                    import time
-                    timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
                     dashboard_html = f"""
                     <html>
                     <head>
@@ -537,9 +535,7 @@ class DarkBoxModule(WicdpicoModule):
                         {css}
                     </head>
                     <body>
-                        <div style="text-align:right; font-size:0.9em; color:#888;">
-                            Page generated at: {timestamp}
-                        </div>
+                        <!-- Removed: Page generated at: {timestamp} -->
                         {darkbox.get_dashboard_html()}
                         <div class="control-group">
                             <button onclick="window.location.href='/calibration'">CO2 Calibration</button>

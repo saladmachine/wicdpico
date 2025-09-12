@@ -62,11 +62,6 @@ def main():
             @foundation.server.route("/", methods=['GET'])
             def serve_dashboard(request):
                 try:
-                    import time
-                    t = time.localtime()
-                    timestamp = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(
-                        t.tm_year, t.tm_mon, t.tm_mday, t.tm_hour, t.tm_min, t.tm_sec
-                    )
                     dashboard_html = f"""
                     <html>
                     <head>
@@ -75,9 +70,6 @@ def main():
                         {css}
                     </head>
                     <body>
-                        <div style="text-align:right; font-size:0.9em; color:#888;">
-                            Page generated at: {timestamp}
-                        </div>
                         {darkbox.get_dashboard_html()}
                     </body>
                     </html>
