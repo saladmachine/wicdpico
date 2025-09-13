@@ -77,6 +77,14 @@ class DarkBoxModule(WicdpicoModule):
         self._initialize_sensors()
         self._initialize_sd_card()
         
+        # Log initial power state after SD card is mounted
+        voltage = self.get_voltage()
+        if voltage > self.USB_THRESHOLD:
+            self.power_state = "USB"
+        elif voltage < self.BATTERY_THRESHOLD:
+            self.power_state = "BATTERY"
+        self._log_power_event_to_sd("startup", "UNKNOWN", self.power_state, voltage)
+        
     def _initialize_sensors(self):
         """Initialize I2C and sensors."""
         try:
@@ -343,6 +351,28 @@ class DarkBoxModule(WicdpicoModule):
                     print(f"Dashboard error: {e}")
                     return Response(request, f"<h1>Dashboard Error</h1><p>{e}</p>", content_type="text/html")
 
+        @server.route("/power-log", methods=['GET'])
+        def power_log(request: Request):
+            if not self.sd_mounted:
+                return Response(request, "SD card not mounted.", content_type="text/plain")
+            try:
+                with open("/sd/power_events.csv", "r") as f:
+                    log_content = f.read()
+                return Response(request, log_content, content_type="text/plain")
+            except Exception as e:
+                return Response(request, f"Error reading power log: {e}", content_type="text/plain")
+
+    def _log_power_event_to_sd(self, event_type, prev_state, new_state, voltage):
+        """Log power event to SD card."""
+        if not self.sd_mounted:
+            return
+        timestamp = self._get_timestamp()
+        try:
+            with open("/sd/power_events.csv", "a") as f:
+                f.write(f"{timestamp},{event_type},{prev_state},{new_state},{voltage:.2f}\n")
+        except Exception as e:
+            print(f"✗ Power event log error: {e}")
+
     def update(self):
         """Called from main loop."""
         self._check_light_events()
@@ -350,12 +380,15 @@ class DarkBoxModule(WicdpicoModule):
 
     def _check_power_state(self):
         voltage = self.get_voltage()
+        prev_state = self.power_state
         if self.power_state != "USB" and voltage > self.USB_THRESHOLD:
             self.power_state = "USB"
             print("Switched to USB power")
+            self._log_power_event_to_sd("transition", prev_state, self.power_state, voltage)
         elif self.power_state != "BATTERY" and voltage < self.BATTERY_THRESHOLD:
             self.power_state = "BATTERY"
             print("Switched to battery power")
+            self._log_power_event_to_sd("transition", prev_state, self.power_state, voltage)
         # If voltage is between thresholds, hold previous state
 
     def cleanup(self):
@@ -376,17 +409,30 @@ class DarkBoxModule(WicdpicoModule):
                 <button onclick="fetch('/power-voltage', {{method:'POST'}})
                     .then(r=>r.text())
                     .then(v=>document.getElementById('power-voltage').innerText = v + ' V')">
-                    Get Current Voltage
+                    Get Voltage
                 </button>
                 <span id="power-voltage" style="margin-left:1em;">--</span>
                 <button onclick="fetch('/power-source', {{method:'POST'}})
                     .then(r=>r.text())
                     .then(s=>document.getElementById('power-state').innerText = s)">
-                    Get Current Power Source
+                    Get Power Source
                 </button>
-                <div>Current Power Source: <span id="power-state">{self.power_state}</span></div>
+                <button onclick="viewPowerLog()">View Log</button>
+                <div>Power Source: <span id="power-state">{self.power_state}</span></div>
             </div>
         </div>
+        <script>
+        function viewPowerLog() {{
+            fetch('/power-log')
+                .then(response => response.text())
+                .then(log => {{
+                    alert('Power Event Log:\\n' + log);
+                }})
+                .catch(error => {{
+                    alert('Error reading power log: ' + error.message);
+                }});
+        }}
+        </script>
         """
 
         return f'''
