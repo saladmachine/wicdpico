@@ -14,6 +14,7 @@ import busio
 import storage
 import adafruit_sdcard
 import digitalio
+import analogio
 from module_base import WicdpicoModule
 from adafruit_httpserver import Request, Response
 
@@ -39,6 +40,9 @@ except ImportError:
     RTC_AVAILABLE = False
 
 class DarkBoxModule(WicdpicoModule):
+    USB_THRESHOLD = 4.4
+    BATTERY_THRESHOLD = 4.2
+
     """Simple DarkBox module combining SCD41 and BH1750 simple patterns."""
     
     def __init__(self, foundation):
@@ -66,6 +70,10 @@ class DarkBoxModule(WicdpicoModule):
         
         self.sd_mounted = False
         
+        self.vsys_adc = analogio.AnalogIn(board.A3)  # VSYS voltage monitor (ADC3/GP29)
+
+        self.power_state = "UNKNOWN"
+
         self._initialize_sensors()
         self._initialize_sd_card()
         
@@ -239,6 +247,121 @@ class DarkBoxModule(WicdpicoModule):
         except Exception as e:
             return False, str(e)
 
+    def get_voltage(self):
+        # VSYS is divided internally, so multiply by 3 for Pico W
+        return round((self.vsys_adc.value * 3.3 / 65536) * 3, 2)
+
+    def register_routes(self, server):
+        """Register HTTP routes for both sensors."""
+        @server.route("/darkbox-environment", methods=['POST'])
+        def environment_reading(request: Request):
+            reading = self.get_environment_reading()
+            if reading['success']: reading['temp_f'] = reading['temp'] * 1.8 + 32
+            return Response(request, json.dumps(reading), content_type="application/json")
+
+        @server.route("/darkbox-light", methods=['POST'])
+        def light_reading(request: Request):
+            reading = self.get_light_reading()
+            return Response(request, json.dumps(reading), content_type="application/json")
+
+        @server.route("/darkbox-calibration", methods=['POST'])
+        def calibration(request: Request):
+            success, message = self.force_calibration(425)
+            return Response(request, message, content_type="text/plain")
+
+        @server.route("/darkbox-clear-events", methods=['POST'])
+        def clear_events(request: Request):
+            count = len(self.light_events)
+            self.light_events = []
+            if self.current_event: self.current_event = None
+            return Response(request, f"Cleared {count} light events", content_type="text/plain")
+        
+        @server.route("/calibration", methods=['GET'])
+        def calibration_page(request: Request):
+            html_content = self.get_calibration_html()
+            full_page = self.foundation.templates.render_page("CO2 Calibration", html_content)
+            return Response(request, full_page, content_type="text/html")
+            
+        @server.route("/darkbox-log", methods=['POST'])
+        def log_data(request: Request):
+            result = self.log_sensor_data()
+            return Response(request, result.get('message', result.get('error')), content_type="text/plain")
+
+        @server.route("/darkbox-read-log", methods=['GET'])
+        def read_log(request: Request):
+            if not self.sd_mounted:
+                return Response(request, "SD card not mounted.", content_type="text/plain")
+            try:
+                with open("/sd/darkbox_data.csv", "r") as f:
+                    log_content = f.read()
+                return Response(request, log_content, content_type="text/plain")
+            except Exception as e:
+                return Response(request, f"Error reading log: {e}", content_type="text/plain")
+
+        @server.route("/darkbox-read-light-log", methods=['GET'])
+        def read_light_log(request: Request):
+            if not self.sd_mounted:
+                return Response(request, "SD card not mounted.", content_type="text/plain")
+            try:
+                with open("/sd/light_events.csv", "r") as f:
+                    log_content = f.read()
+                return Response(request, log_content, content_type="text/plain")
+            except Exception as e:
+                return Response(request, f"Error reading light log: {e}", content_type="text/plain")
+
+        @server.route("/power-voltage", methods=['POST'])
+        def power_voltage(request: Request):
+            voltage = self.get_voltage()
+            return Response(request, str(voltage), content_type="text/plain")
+
+        @server.route("/power-source", methods=['POST'])
+        def power_source(request: Request):
+            return Response(request, self.power_state, content_type="text/plain")
+
+            @foundation.server.route("/", methods=['GET'])
+            def serve_dashboard(request):
+                try:
+                    dashboard_html = f"""
+                    <html>
+                    <head>
+                        <title>WicdPico DarkBox Dashboard</title>
+                        <meta name="viewport" content="width=device-width, initial-scale=1">
+                        {css}
+                    </head>
+                    <body>
+                        <!-- Removed: Page generated at: {timestamp} -->
+                        {darkbox.get_dashboard_html(self)}
+                        <div class="control-group">
+                            <button onclick="window.location.href='/calibration'">CO2 Calibration</button>
+                            <button onclick="fetch('/darkbox-clear-events', {{method:'POST'}}).then(()=>window.location.reload())">Clear Light Events</button>
+                        </div>
+                    </body>
+                    </html>
+                    """
+                    return Response(request, dashboard_html, content_type="text/html")
+                except Exception as e:
+                    print(f"Dashboard error: {e}")
+                    return Response(request, f"<h1>Dashboard Error</h1><p>{e}</p>", content_type="text/html")
+
+    def update(self):
+        """Called from main loop."""
+        self._check_light_events()
+        self._check_power_state()
+
+    def _check_power_state(self):
+        voltage = self.get_voltage()
+        if self.power_state != "USB" and voltage > self.USB_THRESHOLD:
+            self.power_state = "USB"
+            print("Switched to USB power")
+        elif self.power_state != "BATTERY" and voltage < self.BATTERY_THRESHOLD:
+            self.power_state = "BATTERY"
+            print("Switched to battery power")
+        # If voltage is between thresholds, hold previous state
+
+    def cleanup(self):
+        """Cleanup on shutdown."""
+        pass
+
     def get_dashboard_html(self):
         """Dashboard with two cards: environment and light."""
         co2_display = "---" if self.last_co2 is None else f"{self.last_co2}"
@@ -246,6 +369,26 @@ class DarkBoxModule(WicdpicoModule):
         humidity_display = "---" if self.last_humidity is None else f"{self.last_humidity:.1f}"
         lux_display = "---" if self.last_lux is None else f"{self.last_lux:.1f}"
         
+        power_card = f"""
+        <div class="module" id="power-monitor">
+            <h3>Power Monitoring</h3>
+            <div>
+                <button onclick="fetch('/power-voltage', {{method:'POST'}})
+                    .then(r=>r.text())
+                    .then(v=>document.getElementById('power-voltage').innerText = v + ' V')">
+                    Get Current Voltage
+                </button>
+                <span id="power-voltage" style="margin-left:1em;">--</span>
+                <button onclick="fetch('/power-source', {{method:'POST'}})
+                    .then(r=>r.text())
+                    .then(s=>document.getElementById('power-state').innerText = s)">
+                    Get Current Power Source
+                </button>
+                <div>Current Power Source: <span id="power-state">{self.power_state}</span></div>
+            </div>
+        </div>
+        """
+
         return f'''
         <div class="module">
             <h3>Environment Sensor</h3>
@@ -282,6 +425,7 @@ class DarkBoxModule(WicdpicoModule):
             </div>
             <p id="light-status">Ready for measurements</p>
         </div>
+        {power_card}
         <script>
         function getEnvironmentReading() {{
             const btn = document.getElementById('environment-btn');
@@ -466,92 +610,10 @@ class DarkBoxModule(WicdpicoModule):
             print(f"✗ SD card write error: {e}")
             return False
 
-    def register_routes(self, server):
-        """Register HTTP routes for both sensors."""
-        @server.route("/darkbox-environment", methods=['POST'])
-        def environment_reading(request: Request):
-            reading = self.get_environment_reading()
-            if reading['success']: reading['temp_f'] = reading['temp'] * 1.8 + 32
-            return Response(request, json.dumps(reading), content_type="application/json")
-
-        @server.route("/darkbox-light", methods=['POST'])
-        def light_reading(request: Request):
-            reading = self.get_light_reading()
-            return Response(request, json.dumps(reading), content_type="application/json")
-
-        @server.route("/darkbox-calibration", methods=['POST'])
-        def calibration(request: Request):
-            success, message = self.force_calibration(425)
-            return Response(request, message, content_type="text/plain")
-
-        @server.route("/darkbox-clear-events", methods=['POST'])
-        def clear_events(request: Request):
-            count = len(self.light_events)
-            self.light_events = []
-            if self.current_event: self.current_event = None
-            return Response(request, f"Cleared {count} light events", content_type="text/plain")
-        
-        @server.route("/calibration", methods=['GET'])
-        def calibration_page(request: Request):
-            html_content = self.get_calibration_html()
-            full_page = self.foundation.templates.render_page("CO2 Calibration", html_content)
-            return Response(request, full_page, content_type="text/html")
-            
-        @server.route("/darkbox-log", methods=['POST'])
-        def log_data(request: Request):
-            result = self.log_sensor_data()
-            return Response(request, result.get('message', result.get('error')), content_type="text/plain")
-
-        @server.route("/darkbox-read-log", methods=['GET'])
-        def read_log(request: Request):
-            if not self.sd_mounted:
-                return Response(request, "SD card not mounted.", content_type="text/plain")
-            try:
-                with open("/sd/darkbox_data.csv", "r") as f:
-                    log_content = f.read()
-                return Response(request, log_content, content_type="text/plain")
-            except Exception as e:
-                return Response(request, f"Error reading log: {e}", content_type="text/plain")
-
-        @server.route("/darkbox-read-light-log", methods=['GET'])
-        def read_light_log(request: Request):
-            if not self.sd_mounted:
-                return Response(request, "SD card not mounted.", content_type="text/plain")
-            try:
-                with open("/sd/light_events.csv", "r") as f:
-                    log_content = f.read()
-                return Response(request, log_content, content_type="text/plain")
-            except Exception as e:
-                return Response(request, f"Error reading light log: {e}", content_type="text/plain")
-
-            @foundation.server.route("/", methods=['GET'])
-            def serve_dashboard(request):
-                try:
-                    dashboard_html = f"""
-                    <html>
-                    <head>
-                        <title>WicdPico DarkBox Dashboard</title>
-                        <meta name="viewport" content="width=device-width, initial-scale=1">
-                        {css}
-                    </head>
-                    <body>
-                        <!-- Removed: Page generated at: {timestamp} -->
-                        {darkbox.get_dashboard_html(self)}
-                        <div class="control-group">
-                            <button onclick="window.location.href='/calibration'">CO2 Calibration</button>
-                            <button onclick="fetch('/darkbox-clear-events', {{method:'POST'}}).then(()=>window.location.reload())">Clear Light Events</button>
-                        </div>
-                    </body>
-                    </html>
-                    """
-                    return Response(request, dashboard_html, content_type="text/html")
-                except Exception as e:
-                    print(f"Dashboard error: {e}")
-                    return Response(request, f"<h1>Dashboard Error</h1><p>{e}</p>", content_type="text/html")
-
     def update(self):
         """Called from main loop."""
         self._check_light_events()
+        self._check_power_state()
 
     def cleanup(self):
         """Cleanup on shutdown."""
