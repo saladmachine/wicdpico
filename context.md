@@ -1,5 +1,23 @@
 # WicdPico Collaborative Refactoring Workflow & AI Interaction Guidelines
 
+!!!USE ONLY CIRCUITPYTHON AND NOT PYTHON!!!
+
+# WicdPico Collaborative Refactoring Workflow & AI Interaction Guidelines
+
+## Task Management & Chat Commands
+- Use short, simple tasks.
+- Use `@<filename>` to reference files.
+- `/chat` ends the current chat, saves context, and starts a new chat.
+- To refresh context, update `context.md`, then use `/clear` and tell the assistant to read `context.md`.
+
+## Collaborative Refactoring Checklist
+
+### Phase 1: Strategy & Prompt Engineering (Chat)
+1. **Target Selection & Analysis**
+   - Select a module to refactor and provide its code.
+   - Identify all configurable values (I2C addresses, magic numbers, thresholds, etc.).
+**This context ensures efficient, disciplined, and collaborative project management and AI interaction.**
+
 ## Task Management & Chat Commands
 - Use short, simple tasks.
 - Use `@<filename>` to reference files.

@@ -79,6 +79,13 @@ def main():
                             Page generated at: {timestamp}
                         </div>
                         {darkbox.get_dashboard_html()}
+                        <!-- SD Card Section -->
+                        <div class="module" style="margin-top:2em;">
+                            <h2>SD Card</h2>
+                            <div class="control-group">
+                                <button disabled>SD Files</button>
+                            </div>
+                        </div>
                     </body>
                     </html>
                     """

@@ -11,71 +11,26 @@ Provides web interface and management for SD card storage
 on Raspberry Pi Pico with CircuitPython.
 
 * Author(s): WicdPico Development Team
-
-Implementation Notes
---------------------
-
-**Hardware:**
-
-* Designed for use with Adafruit PicoBell Adalogger FeatherWing
-* Uses SD card slot on the FeatherWing
-* Requires CircuitPython storage module
-
-**Software and Dependencies:**
-
-* Adafruit CircuitPython firmware for Raspberry Pi Pico 2 W
-* CircuitPython storage module
-* adafruit_httpserver
-* WicdPico foundation system
-
-**Notes:**
-
-* Provides file system access and storage management
-* Web interface for file operations and status checking
-* Automatic error handling for missing or corrupted SD cards
-
 """
 
 import storage
 import os
 import gc
 from module_base import WicdpicoModule
-from adafruit_httpserver import Request, Response
+from adafruit_httpserver import Response
 
 __version__ = "0.0.0+auto.0"
 __repo__ = "https://github.com/wicdpico/wicdpico.git"
 
-
 class SDCardModule(WicdpicoModule):
-    """
-    SD Card Control Module for WicdPico system.
-    
-    Provides web interface and management for SD card storage.
-    Handles card detection, mounting, and basic file operations.
-    
-    :param foundation: WicdPico foundation instance for system integration
-    :type foundation: WicdPico
-    """
-    
     def __init__(self, foundation):
-        """
-        Initialize SD Card Control Module.
-        
-        Sets up SD card detection and mounting.
-        Handles initialization errors gracefully.
-        
-        :param foundation: WicdPico foundation instance
-        :type foundation: WicdPico
-        """
         super().__init__(foundation)
         self.name = "SD Card Control"
-        
         self.card_available = False
         self.mount_point = "/sd"
         self.card_info = {}
         self.max_file_size = 1024 * 1024  # 1MB default limit
         self.allowed_extensions = ['.txt', '.log', '.json', '.csv', '.py', '.md', '.html', '.css', '.js']
-        
         try:
             self._detect_and_mount_card()
             if self.card_available:
@@ -87,26 +42,14 @@ class SDCardModule(WicdpicoModule):
             self.foundation.startup_print(f"SD card initialization failed: {str(e)}. SD card will be unavailable.")
 
     def _detect_and_mount_card(self):
-        """
-        Detect and mount the SD card.
-        
-        Attempts to access the SD card and gather basic information.
-        Sets card_available flag based on success.
-        """
         try:
-            # Check if we can access the root filesystem (where SD would be mounted in CircuitPython)
-            # CircuitPython typically auto-mounts SD cards to the root filesystem
             statvfs = os.statvfs("/")
-            
-            # Calculate storage information
             block_size = statvfs[0]
             total_blocks = statvfs[2]
             free_blocks = statvfs[3]
-            
             total_bytes = block_size * total_blocks
             free_bytes = block_size * free_blocks
             used_bytes = total_bytes - free_bytes
-            
             self.card_info = {
                 'total_bytes': total_bytes,
                 'free_bytes': free_bytes,
@@ -116,54 +59,29 @@ class SDCardModule(WicdpicoModule):
                 'used_mb': round(used_bytes / (1024 * 1024), 2),
                 'usage_percent': round((used_bytes / total_bytes) * 100, 1) if total_bytes > 0 else 0
             }
-            
             self.card_available = True
-            
         except Exception as e:
             self.card_available = False
             self.card_info = {}
             raise e
 
     def _validate_file_path(self, filepath):
-        """
-        Validate file path for safety and compatibility.
-        
-        :param filepath: Path to validate
-        :type filepath: str
-        :return: True if valid, False otherwise
-        :rtype: bool
-        """
         if not filepath or not isinstance(filepath, str):
             return False
-        
-        # Check for dangerous path components
         dangerous_chars = ['..', '<', '>', '|', '*', '?', '"']
         for char in dangerous_chars:
             if char in filepath:
                 return False
-        
-        # Must start with /
         if not filepath.startswith('/'):
             return False
-        
-        # Check file extension if it's a file (has extension)
         if '.' in filepath.split('/')[-1]:
             ext = '.' + filepath.split('.')[-1].lower()
             if ext not in self.allowed_extensions:
                 self.foundation.startup_print(f"File extension {ext} not allowed")
                 return False
-        
         return True
 
     def _validate_file_size(self, content):
-        """
-        Validate content size against limits.
-        
-        :param content: Content to validate
-        :type content: str or bytes
-        :return: True if valid, False otherwise
-        :rtype: bool
-        """
         size = len(content)
         if size > self.max_file_size:
             self.foundation.startup_print(f"File size {size} exceeds limit {self.max_file_size}")
@@ -171,26 +89,16 @@ class SDCardModule(WicdpicoModule):
         return True
 
     def create_directory(self, dirpath):
-        """
-        Create a new directory.
-        
-        :param dirpath: Path to the directory to create
-        :type dirpath: str
-        :return: True if successful, False otherwise
-        :rtype: bool
-        """
         if not self.card_available:
             return False
-        
         if not self._validate_file_path(dirpath):
             return False
-        
         try:
             os.mkdir(dirpath)
             self.foundation.startup_print(f"Directory created: {dirpath}")
             return True
         except OSError as e:
-            if e.errno == 17:  # Directory already exists
+            if e.errno == 17:
                 self.foundation.startup_print(f"Directory already exists: {dirpath}")
                 return True
             else:
@@ -201,32 +109,18 @@ class SDCardModule(WicdpicoModule):
             return False
 
     def delete_directory(self, dirpath, recursive=False):
-        """
-        Delete a directory.
-        
-        :param dirpath: Path to the directory to delete
-        :type dirpath: str
-        :param recursive: If True, delete contents recursively
-        :type recursive: bool
-        :return: True if successful, False otherwise
-        :rtype: bool
-        """
         if not self.card_available:
             return False
-        
         if not self._validate_file_path(dirpath):
             return False
-        
         try:
             if recursive:
-                # Delete contents first
                 items = self.list_directory(dirpath)
                 for item in items:
                     if item['type'] == 'directory':
                         self.delete_directory(item['path'], recursive=True)
                     else:
                         self.delete_file(item['path'])
-            
             os.rmdir(dirpath)
             self.foundation.startup_print(f"Directory deleted: {dirpath}")
             return True
@@ -235,24 +129,11 @@ class SDCardModule(WicdpicoModule):
             return False
 
     def copy_file(self, source_path, dest_path):
-        """
-        Copy a file from source to destination.
-        
-        :param source_path: Source file path
-        :type source_path: str
-        :param dest_path: Destination file path
-        :type dest_path: str
-        :return: True if successful, False otherwise
-        :rtype: bool
-        """
         if not self.card_available:
             return False
-        
         if not self._validate_file_path(source_path) or not self._validate_file_path(dest_path):
             return False
-        
         try:
-            # Read source file in chunks to handle large files
             chunk_size = 1024
             with open(source_path, 'rb') as src:
                 with open(dest_path, 'wb') as dst:
@@ -261,7 +142,6 @@ class SDCardModule(WicdpicoModule):
                         if not chunk:
                             break
                         dst.write(chunk)
-            
             self.foundation.startup_print(f"File copied: {source_path} -> {dest_path}")
             return True
         except Exception as e:
@@ -269,53 +149,24 @@ class SDCardModule(WicdpicoModule):
             return False
 
     def move_file(self, source_path, dest_path):
-        """
-        Move a file from source to destination.
-        
-        :param source_path: Source file path
-        :type source_path: str
-        :param dest_path: Destination file path
-        :type dest_path: str
-        :return: True if successful, False otherwise
-        :rtype: bool
-        """
         if not self.card_available:
             return False
-        
         if self.copy_file(source_path, dest_path):
             if self.delete_file(source_path):
                 self.foundation.startup_print(f"File moved: {source_path} -> {dest_path}")
                 return True
             else:
-                # Clean up destination if source deletion failed
                 self.delete_file(dest_path)
                 return False
         return False
 
     def get_file_extension(self, filepath):
-        """
-        Get file extension from path.
-        
-        :param filepath: File path
-        :type filepath: str
-        :return: File extension (including dot) or empty string
-        :rtype: str
-        """
         if '.' in filepath.split('/')[-1]:
             return '.' + filepath.split('.')[-1].lower()
         return ''
 
     def get_file_type(self, filepath):
-        """
-        Determine file type based on extension.
-        
-        :param filepath: File path
-        :type filepath: str
-        :return: File type description
-        :rtype: str
-        """
         ext = self.get_file_extension(filepath)
-        
         type_map = {
             '.txt': 'Text File',
             '.log': 'Log File',
@@ -327,29 +178,18 @@ class SDCardModule(WicdpicoModule):
             '.css': 'Stylesheet',
             '.js': 'JavaScript'
         }
-        
         return type_map.get(ext, 'Unknown File')
 
     def list_directory(self, path="/"):
-        """
-        List contents of a directory on the SD card.
-        
-        :param path: Directory path to list (default: root)
-        :type path: str
-        :return: List of dictionaries containing file/directory info
-        :rtype: list
-        """
         if not self.card_available:
             return []
-        
         try:
             items = []
             for item in os.listdir(path):
                 item_path = path.rstrip('/') + '/' + item if path != '/' else '/' + item
                 try:
                     stat_result = os.stat(item_path)
-                    is_dir = (stat_result[0] & 0x4000) != 0  # Check if directory
-                    
+                    is_dir = (stat_result[0] & 0x4000) != 0
                     items.append({
                         'name': item,
                         'path': item_path,
@@ -359,35 +199,19 @@ class SDCardModule(WicdpicoModule):
                         'extension': '' if is_dir else self.get_file_extension(item_path)
                     })
                 except OSError:
-                    # Skip items we can't stat
                     continue
-            
             return sorted(items, key=lambda x: (x['type'] == 'file', x['name'].lower()))
-            
         except Exception as e:
             self.foundation.startup_print(f"Error listing directory {path}: {str(e)}")
             return []
 
     def create_file(self, filepath, content=""):
-        """
-        Create a new file with optional content.
-        
-        :param filepath: Path to the file to create
-        :type filepath: str
-        :param content: Initial content for the file
-        :type content: str
-        :return: True if successful, False otherwise
-        :rtype: bool
-        """
         if not self.card_available:
             return False
-        
         if not self._validate_file_path(filepath):
             return False
-        
         if not self._validate_file_size(content):
             return False
-        
         try:
             with open(filepath, 'w') as f:
                 f.write(content)
@@ -398,19 +222,8 @@ class SDCardModule(WicdpicoModule):
             return False
 
     def read_file(self, filepath, max_size=1024):
-        """
-        Read content from a file.
-        
-        :param filepath: Path to the file to read
-        :type filepath: str
-        :param max_size: Maximum number of bytes to read
-        :type max_size: int
-        :return: File content as string, or None if error
-        :rtype: str or None
-        """
         if not self.card_available:
             return None
-        
         try:
             with open(filepath, 'r') as f:
                 content = f.read(max_size)
@@ -420,25 +233,10 @@ class SDCardModule(WicdpicoModule):
             return None
 
     def write_file(self, filepath, content, append=False):
-        """
-        Write content to a file.
-        
-        :param filepath: Path to the file to write
-        :type filepath: str
-        :param content: Content to write to the file
-        :type content: str
-        :param append: If True, append to file; if False, overwrite
-        :type append: bool
-        :return: True if successful, False otherwise
-        :rtype: bool
-        """
         if not self.card_available:
             return False
-        
         if not self._validate_file_path(filepath):
             return False
-        
-        # For append mode, check final size
         if append and self.file_exists(filepath):
             existing_size = self.get_file_info(filepath)
             if existing_size:
@@ -448,7 +246,6 @@ class SDCardModule(WicdpicoModule):
                     return False
         elif not self._validate_file_size(content):
             return False
-        
         try:
             mode = 'a' if append else 'w'
             with open(filepath, mode) as f:
@@ -460,17 +257,8 @@ class SDCardModule(WicdpicoModule):
             return False
 
     def delete_file(self, filepath):
-        """
-        Delete a file from the SD card.
-        
-        :param filepath: Path to the file to delete
-        :type filepath: str
-        :return: True if successful, False otherwise
-        :rtype: bool
-        """
         if not self.card_available:
             return False
-        
         try:
             os.remove(filepath)
             self.foundation.startup_print(f"File deleted: {filepath}")
@@ -480,17 +268,8 @@ class SDCardModule(WicdpicoModule):
             return False
 
     def file_exists(self, filepath):
-        """
-        Check if a file exists on the SD card.
-        
-        :param filepath: Path to check
-        :type filepath: str
-        :return: True if file exists, False otherwise
-        :rtype: bool
-        """
         if not self.card_available:
             return False
-        
         try:
             os.stat(filepath)
             return True
@@ -498,21 +277,11 @@ class SDCardModule(WicdpicoModule):
             return False
 
     def get_file_info(self, filepath):
-        """
-        Get detailed information about a file.
-        
-        :param filepath: Path to the file
-        :type filepath: str
-        :return: Dictionary with file info or None if error
-        :rtype: dict or None
-        """
         if not self.card_available:
             return None
-        
         try:
             stat_result = os.stat(filepath)
             is_dir = (stat_result[0] & 0x4000) != 0
-            
             return {
                 'name': filepath.split('/')[-1],
                 'path': filepath,
@@ -526,187 +295,249 @@ class SDCardModule(WicdpicoModule):
             return None
 
     def get_card_status(self):
-        """
-        Get current SD card status information.
-        
-        :return: Dictionary containing card status and storage info
-        :rtype: dict
-        """
         if self.card_available:
-            # Refresh card info
             try:
                 self._detect_and_mount_card()
             except:
                 self.card_available = False
                 self.card_info = {}
-        
         return {
             'available': self.card_available,
             'mount_point': self.mount_point,
             'card_info': self.card_info.copy()
         }
 
-    def register_routes(self, server):
-        """
-        Register HTTP routes for SD card web interface.
-        
-        Provides REST endpoints for SD card status and control.
-        """
-        @server.route("/sd-status", methods=['POST'])
-        def sd_status(request: Request):
-            try:
-                status = self.get_card_status()
-                
-                if not status['available']:
-                    return Response(request, "SD card not available", content_type="text/plain")
-
-                card_info = status['card_info']
-                status_text = f"Storage: {card_info['total_mb']} MB total<br>"
-                status_text += f"Free: {card_info['free_mb']} MB<br>"
-                status_text += f"Used: {card_info['used_mb']} MB<br>"
-                status_text += f"Usage: {card_info['usage_percent']}%"
-
-                self.foundation.startup_print(f"SD Status: {card_info['total_mb']}MB total, {card_info['free_mb']}MB free, {card_info['usage_percent']}% used")
-
-                return Response(request, status_text, content_type="text/html")
-
-            except Exception as e:
-                error_msg = f"Error reading SD card: {str(e)}"
-                self.foundation.startup_print(error_msg)
-                return Response(request, error_msg, content_type="text/plain")
-
-        @server.route("/sd-files", methods=['POST'])
-        def sd_files(request: Request):
-            try:
-                if not self.card_available:
-                    return Response(request, "SD card not available", content_type="text/plain")
-
-                # Get directory path from request, default to root
-                path = "/"
-                if hasattr(request, 'form') and 'path' in request.form:
-                    path = request.form['path']
-
-                files = self.list_directory(path)
-                
-                if not files:
-                    return Response(request, f"No files found in {path}", content_type="text/plain")
-
-                # Build HTML file listing
-                files_html = f"<strong>Contents of {path}:</strong><br><br>"
-                
-                for item in files:
-                    icon = "📁" if item['type'] == 'directory' else "📄"
-                    size_text = f" ({item['size']} bytes)" if item['type'] == 'file' else ""
-                    files_html += f"{icon} {item['name']}{size_text}<br>"
-
-                self.foundation.startup_print(f"SD Files: Listed {len(files)} items in {path}")
-
-                return Response(request, files_html, content_type="text/html")
-
-            except Exception as e:
-                error_msg = f"Error listing SD files: {str(e)}"
-                self.foundation.startup_print(error_msg)
-                return Response(request, error_msg, content_type="text/plain")
-
     def get_dashboard_html(self):
-        """
-        Generate HTML dashboard widget for SD card control.
-        
-        Creates interactive web interface with status display and control buttons.
-        Includes JavaScript for AJAX communication with the server.
-        
-        :return: HTML string containing dashboard widget
-        :rtype: str
-        """
-        return '''
+        return """
         <div class="module">
-            <h3>SD Card Control</h3>
+            <h2>SD Card</h2>
             <div class="control-group">
-                <button id="sd-status-btn" onclick="getSDStatus()">Get SD Status</button>
-                <button id="sd-files-btn" onclick="getSDFiles()">List Files</button>
-                <a href="/sd-browse" target="_blank" class="btn" style="display: inline-block; padding: 8px 16px; background: #27ae60; color: white; text-decoration: none; border-radius: 4px;">File Browser</a>
-            </div>
-            <p id="sd-display-status">SD Status: Click button</p>
-            <div id="sd-file-list" style="margin-top: 10px; padding: 10px; background: #f9f9f9; border-radius: 5px; display: none;">
-                <strong>Files:</strong><br>
-                <div id="sd-files-content"></div>
+                <form method="POST" action="/list_sd_files">
+                    <button type="submit">SD Files</button>
+                </form>
             </div>
         </div>
+        """
 
-        <script>
-        // JavaScript for Get SD Status
-        function getSDStatus() {
-            const btn = document.getElementById('sd-status-btn');
-            btn.disabled = true;
-            btn.textContent = 'Reading...';
+    def register_routes(self, server):
+        @server.route("/", methods=["GET"])
+        def dashboard(request):
+            css = """
+            <style>
+                .module {
+                    border: 1px solid #ccc;
+                    border-radius: 8px;
+                    padding: 1em;
+                    margin-bottom: 1em;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+                    background: #fff;
+                }
+                .control-group {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 1em;
+                    margin-top: 1em;
+                }
+                button {
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    padding: 0.75em 2em;
+                    cursor: pointer;
+                    font-size: 1em;
+                    margin: 0.5em 0;
+                }
+                button:active, button:focus {
+                    outline: none;
+                }
+                .file-list {
+                    margin-top: 1em;
+                    font-size: 0.95em;
+                }
+                .file-list ul {
+                    padding-left: 1.5em;
+                }
+                .file-content {
+                    margin-top: 2em;
+                    padding: 1em;
+                    background: #f9f9f9;
+                    border-radius: 8px;
+                    border: 1px solid #eee;
+                    font-family: monospace;
+                    white-space: pre-wrap;
+                }
+            </style>
+            """
+            html = f"""
+            <html>
+            <head>
+                <title>WicdPico SD Card Dashboard</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                {css}
+            </head>
+            <body>
+                {self.get_dashboard_html()}
+            </body>
+            </html>
+            """
+            return Response(request, html, content_type="text/html")
 
-            fetch('/sd-status', { method: 'POST' })
-                .then(response => response.text())
-                .then(result => {
-                    btn.disabled = false;
-                    btn.textContent = 'Get SD Status';
-                    document.getElementById('sd-display-status').innerHTML = 'SD Status: ' + result;
-                })
-                .catch(error => {
-                    btn.disabled = false;
-                    btn.textContent = 'Get SD Status';
-                    document.getElementById('sd-display-status').textContent = 'Error: ' + error.message;
-                });
-        }
+        @server.route("/list_sd_files", methods=["GET", "POST"])
+        def list_sd_files(request):
+            css = """
+            <style>
+                .module {
+                    border: 1px solid #ccc;
+                    border-radius: 8px;
+                    padding: 1em;
+                    margin-bottom: 1em;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+                    background: #fff;
+                }
+                .control-group {
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    gap: 1em;
+                    margin-top: 1em;
+                }
+                button {
+                    background: #007bff;
+                    color: white;
+                    border: none;
+                    border-radius: 8px;
+                    padding: 0.75em 2em;
+                    cursor: pointer;
+                    font-size: 1em;
+                    margin: 0.5em 0;
+                }
+                button:active, button:focus {
+                    outline: none;
+                }
+                .file-list {
+                    margin-top: 1em;
+                    font-size: 0.95em;
+                }
+                .file-list ul {
+                    padding-left: 1.5em;
+                }
+                .file-content {
+                    margin-top: 2em;
+                    padding: 1em;
+                    background: #f9f9f9;
+                    border-radius: 8px;
+                    border: 1px solid #eee;
+                    font-family: monospace;
+                    white-space: pre-wrap;
+                }
+            </style>
+            """
+            files = self.list_directory(self.mount_point)
+            file_list_html = "<div class='file-list'><strong>SD Card Files:</strong><ul>"
+            if files:
+                for f in files:
+                    if f['type'] == 'file':
+                        file_list_html += (
+                            f"<li><a href='/view_file?path={f['path']}'>{f['name']}</a> ({f['type']})</li>"
+                        )
+                    else:
+                        file_list_html += f"<li>{f['name']} ({f['type']})</li>"
+            else:
+                file_list_html += "<li>No files found or SD card unavailable.</li>"
+            file_list_html += "</ul></div>"
 
-        // JavaScript for List Files
-        function getSDFiles() {
-            const btn = document.getElementById('sd-files-btn');
-            const fileList = document.getElementById('sd-file-list');
-            const filesContent = document.getElementById('sd-files-content');
-            
-            btn.disabled = true;
-            btn.textContent = 'Loading...';
+            html = f"""
+            <html>
+            <head>
+                <title>WicdPico SD Card Dashboard</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                {css}
+            </head>
+            <body>
+                {self.get_dashboard_html()}
+                {file_list_html}
+            </body>
+            </html>
+            """
+            return Response(request, html, content_type="text/html")
 
-            fetch('/sd-files', { method: 'POST' })
-                .then(response => response.text())
-                .then(result => {
-                    btn.disabled = false;
-                    btn.textContent = 'List Files';
-                    filesContent.innerHTML = result;
-                    fileList.style.display = 'block';
-                })
-                .catch(error => {
-                    btn.disabled = false;
-                    btn.textContent = 'List Files';
-                    filesContent.textContent = 'Error: ' + error.message;
-                    fileList.style.display = 'block';
-                });
-        }
-        </script>
-        '''
+        @server.route("/view_file", methods=["GET"])
+        def view_file(request):
+            css = """
+            <style>
+                .module {
+                    border: 1px solid #ccc;
+                    border-radius: 8px;
+                    padding: 1em;
+                    margin-bottom: 1em;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+                    background: #fff;
+                }
+                .file-content {
+                    margin-top: 2em;
+                    padding: 1em;
+                    background: #f9f9f9;
+                    border-radius: 8px;
+                    border: 1px solid #eee;
+                    font-family: monospace;
+                    white-space: pre-wrap;
+                }
+            </style>
+            """
+            # Use request.query_params for CircuitPython
+            file_path = request.query_params.get("path", "")
+            file_name = file_path.split("/")[-1] if file_path else "Unknown"
+            file_content = ""
+            error_msg = ""
+            if file_path and self.file_exists(file_path):
+                file_content = self.read_file(file_path, max_size=4096)
+                if file_content is None:
+                    error_msg = "Error reading file."
+            else:
+                error_msg = "File not found or invalid path."
+
+            def html_escape(text):
+                return (
+                    text.replace("&", "&amp;")
+                    .replace("<", "&lt;")
+                    .replace(">", "&gt;")
+                    .replace('"', "&quot;")
+                    .replace("'", "&#39;")
+                ) if text else ""
+
+            file_content_html = (
+                f"<div class='file-content'><strong>{file_name}</strong><br><pre>{html_escape(file_content)}</pre></div>"
+                if not error_msg else f"<div class='file-content'><strong>{error_msg}</strong></div>"
+            )
+
+            back_link = "<div style='margin-top:1em;'><a href='/list_sd_files'>&larr; Back to file list</a></div>"
+
+            html = f"""
+            <html>
+            <head>
+                <title>View SD Card File</title>
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                {css}
+            </head>
+            <body>
+                {self.get_dashboard_html()}
+                {file_content_html}
+                {back_link}
+            </body>
+            </html>
+            """
+            return Response(request, html, content_type="text/html")
 
     def update(self):
-        """
-        Periodic update method called by foundation system.
-        
-        Performs regular maintenance tasks if needed.
-        Currently no periodic tasks required for SD card.
-        """
         pass
 
     def cleanup(self):
-        """
-        Cleanup method called during system shutdown.
-        
-        Performs any necessary cleanup operations before module shutdown.
-        Currently no cleanup is required for SD card.
-        """
         pass
 
     @property
     def storage_info(self):
-        """
-        Get current storage information.
-        
-        :return: Storage info dictionary or None if card unavailable
-        :rtype: dict or None
-        """
         if self.card_available:
             try:
                 status = self.get_card_status()
