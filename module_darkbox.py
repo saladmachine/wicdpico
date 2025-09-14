@@ -17,6 +17,7 @@ import digitalio
 import analogio
 from module_base import WicdpicoModule
 from adafruit_httpserver import Request, Response
+from module_darkbox import DarkBoxModule
 
 # Try to import SCD4x library
 try:
@@ -664,3 +665,5 @@ class DarkBoxModule(WicdpicoModule):
     def cleanup(self):
         """Cleanup on shutdown."""
         pass
+
+darkbox = DarkBoxModule(foundation)

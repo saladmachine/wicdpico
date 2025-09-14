@@ -530,6 +530,29 @@ class SDCardModule(WicdpicoModule):
             """
             return Response(request, html, content_type="text/html")
 
+        @server.route("/create_file", methods=["POST"])
+        def create_file_route(request):
+            filename = request.form_data.get("filename", "")
+            content = request.form_data.get("content", "")
+            result = self.create_file(filename, content)
+            msg = f"File '{filename}' created." if result else f"Failed to create file '{filename}'."
+            return Response(request, msg, content_type="text/plain")
+
+        @server.route("/save_file", methods=["POST"])
+        def save_file_route(request):
+            filename = request.form_data.get("filename", "")
+            content = request.form_data.get("content", "")
+            result = self.write_file(filename, content, append=False)
+            msg = f"File '{filename}' saved." if result else f"Failed to save file '{filename}'."
+            return Response(request, msg, content_type="text/plain")
+
+        @server.route("/delete_file", methods=["POST"])
+        def delete_file_route(request):
+            filename = request.form_data.get("filename", "")
+            result = self.delete_file(filename)
+            msg = f"File '{filename}' deleted." if result else f"Failed to delete file '{filename}'."
+            return Response(request, msg, content_type="text/plain")
+
     def update(self):
         pass
 
