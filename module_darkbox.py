@@ -17,7 +17,7 @@ import digitalio
 import analogio
 from module_base import WicdpicoModule
 from adafruit_httpserver import Request, Response
-from module_darkbox import DarkBoxModule
+
 
 # Try to import SCD4x library
 try:
@@ -466,7 +466,7 @@ class DarkBoxModule(WicdpicoModule):
                 Light: <span id="lux-value">{lux_display}</span> lux
             </div>
             <div class="control-group">
-                <button id="light-btn" onclick="getLightReading()">Update Status</button>
+                <button id="light-btn" onclick="getLightReading()">Read Lux</button>
                 <button id="read-light-log-btn" onclick="readLightLogFile()">Read Light Log</button>
                 <button id="clear-events-btn" onclick="clearLightEvents()">Clear Light Events</button>
             </div>
@@ -508,7 +508,7 @@ class DarkBoxModule(WicdpicoModule):
                     }} else {{
                         statusEl.textContent = 'Error: ' + data.error;
                     }}
-                }}).finally(() => {{ btn.disabled = false; btn.textContent = 'Update Status'; }});
+                }}).finally(() => {{ btn.disabled = false; btn.textContent = 'Read Lux'; }});
         }}
         function logData() {{
             const btn = document.getElementById('log-btn');
@@ -657,6 +657,62 @@ class DarkBoxModule(WicdpicoModule):
             print(f"✗ SD card write error: {e}")
             return False
 
+    def get_html_template(self):
+        # Refactored Files card: only List CSV Files and Download CSV buttons
+        return """
+        <h2>Files</h2>
+        <button onclick="showCsvList()">List CSV Files</button>
+        <div id="csv-list" style="margin-bottom: 20px; display:none;"></div>
+        <button onclick="showDownloadCsvList()">Download CSV</button>
+        <div id="download-csv-list" style="margin-bottom: 20px; display:none;"></div>
+        <script>
+        function fetchCsvFiles(callback) {
+            fetch('/monitor/list_csv', { method: 'GET' })
+                .then(response => response.text())
+                .then(result => {
+                    const files = result.split(',').map(f => f.trim()).filter(f => f !== "");
+                    callback(files);
+                });
+        }
+        function showCsvList() {
+            fetchCsvFiles(function(files) {
+                const csvListDiv = document.getElementById('csv-list');
+                if (files.length === 0) {
+                    csvListDiv.innerHTML = "<p>No CSV files found.</p>";
+                } else {
+                    let html = "<ul style='font-size:1.1em;'>";
+                    files.forEach(function(fname) {
+                        html += "<li>" + fname + "</li>";
+                    });
+                    html += "</ul>";
+                    csvListDiv.innerHTML = html;
+                }
+                csvListDiv.style.display = 'block';
+                document.getElementById('download-csv-list').style.display = 'none';
+            });
+        }
+        function showDownloadCsvList() {
+            fetchCsvFiles(function(files) {
+                const downloadDiv = document.getElementById('download-csv-list');
+                if (files.length === 0) {
+                    downloadDiv.innerHTML = "<p>No CSV files found.</p>";
+                } else {
+                    let html = "<ul style='font-size:1.1em;'>";
+                    files.forEach(function(fname) {
+                        html += "<li><a href='/monitor/download?file=" + encodeURIComponent(fname) +
+                                "' download style='text-decoration:none;'>" +
+                                fname + " &#x1F4E5;</a></li>";
+                    });
+                    html += "</ul>";
+                    downloadDiv.innerHTML = html;
+                }
+                downloadDiv.style.display = 'block';
+                document.getElementById('csv-list').style.display = 'none';
+            });
+        }
+        </script>
+        """
+
     def update(self):
         """Called from main loop."""
         self._check_light_events()
@@ -666,4 +722,3 @@ class DarkBoxModule(WicdpicoModule):
         """Cleanup on shutdown."""
         pass
 
-darkbox = DarkBoxModule(foundation)

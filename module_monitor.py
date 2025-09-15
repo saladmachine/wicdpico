@@ -129,22 +129,12 @@ class MonitorModule(WicdpicoModule):
             return Response(request, f"Error downloading CSV file: {e}", content_type="text/plain")
 
     def get_html_template(self):
-        # Refactored to use browser defaults: CSV files listed as clickable links for download
         return """
-        <h2>Monitor</h2>
+        <h2>Files</h2>
         <button onclick="showCsvList()">List CSV Files</button>
         <div id="csv-list" style="margin-bottom: 20px; display:none;"></div>
         <button onclick="showDownloadCsvList()">Download CSV</button>
         <div id="download-csv-list" style="margin-bottom: 20px; display:none;"></div>
-        <div style="height: 20px;"></div>
-        <button id="toggle-btn" onclick="toggleMonitor()">Start Monitor</button>
-        <button onclick="getConsole()">Get Output</button>
-        <button onclick="loadLog()">Load Log</button>
-        <button onclick="clearLog()">Clear Log</button>
-        <div id="console-area" style="display: none;">
-            <h3>Console Output:</h3>
-            <pre id="console-output" style="background: #f0f0f0; padding: 10px; height: 200px; overflow-y: auto;"></pre>
-        </div>
         <script>
         function fetchCsvFiles(callback) {
             fetch('/monitor/list_csv', { method: 'GET' })
@@ -179,10 +169,8 @@ class MonitorModule(WicdpicoModule):
                 } else {
                     let html = "<ul style='font-size:1.1em;'>";
                     files.forEach(function(fname) {
-                        const downloadName = fname.substring(fname.lastIndexOf('/') + 1);
-                        const safe_fname = fname.replace('/', '--');
-                        html += "<li><a href='/monitor/download?file=" + encodeURIComponent(safe_fname) +
-                                "' download='" + downloadName + "' style='text-decoration:none;'>" +
+                        html += "<li><a href='/monitor/download?file=" + encodeURIComponent(fname) +
+                                "' download style='text-decoration:none;'>" +
                                 fname + " &#x1F4E5;</a></li>";
                     });
                     html += "</ul>";
@@ -191,44 +179,6 @@ class MonitorModule(WicdpicoModule):
                 downloadDiv.style.display = 'block';
                 document.getElementById('csv-list').style.display = 'none';
             });
-        }
-        function toggleMonitor() {
-            fetch('/monitor/toggle', { method: 'POST' })
-                .then(response => response.text())
-                .then(result => {
-                    document.getElementById('status').textContent = result;
-                    const btn = document.getElementById('toggle-btn');
-                    if (result.includes('ON')) {
-                        btn.textContent = 'Stop Monitor';
-                        document.getElementById('console-area').style.display = 'block';
-                    } else {
-                        btn.textContent = 'Start Monitor';
-                        document.getElementById('console-area').style.display = 'none';
-                    }
-                });
-        }
-        function getConsole() {
-            fetch('/monitor/output', { method: 'GET' })
-                .then(response => response.text())
-                .then(result => {
-                    const output = document.getElementById('console-output');
-                    if (result !== 'No new output') {
-                        output.textContent += result + '\\n';
-                        output.scrollTop = output.scrollHeight;
-                    }
-                });
-        }
-        function loadLog() {
-            fetch('/monitor/load', { method: 'GET' })
-                .then(response => response.text())
-                .then(result => {
-                    document.getElementById('console-output').textContent = result;
-                });
-        }
-        function clearLog() {
-            fetch('/monitor/clear', { method: 'POST' })
-                .then(response => response.text())
-                .then(result => { alert(result); document.getElementById('console-output').textContent = ""; });
         }
         </script>
         """

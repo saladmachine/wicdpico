@@ -140,26 +140,51 @@ It provides a standalone WiFi hotspot and a web-based dashboard for real-time mo
 
 ## Architectural Violations (from open files)
 
-1. **Dashboard Route in Module**
-   - In `module_darkbox.py`, the dashboard route (`serve_dashboard`) is still present and **nested inside another route**.  
-     **Violation:** The dashboard route should only be defined in the main application file (e.g., `code.py` or `code_darkbox.py`), not in any module.  
-     **Fix:** Remove the dashboard route from `module_darkbox.py`.
-
-2. **Route Nesting**
-   - In `module_darkbox.py`, the dashboard route is nested inside the `read_light_log` route.  
-     **Violation:** Routes should not be nested; each route should be defined at the top level within the `register_routes` method.
-
-3. **Module HTML Integration**
-   - All modules should provide dashboard widgets via `get_dashboard_html()`, not serve full dashboard pages.
+*No current architectural violations. All dashboard routes are now correctly defined only in the main application file (e.g., `code.py`). All module routes are properly registered and not nested. Modules provide dashboard widgets via `get_dashboard_html()` as required.*
 
 ---
 
-## Summary
+## Context Notes for WicdPico Project
 
-The WicdPico architecture is robust, modular, and extensible, supporting a wide range of sensor and control modules.  
-To maintain architectural integrity, ensure that:
-- The dashboard route is only served from the main application file.
-- Modules only provide REST endpoints and dashboard widgets.
-- Route definitions are not nested within each other.
+### SD Card File Handling
 
-**Adhering to these principles will keep the system maintainable and scalable.**
+- All CSV log files are stored **only on the SD card** (`/sd`), not on the root (`/`) directory.
+- The root directory is read-only when CIRCUITPY is mounted over USB; this is why all logging and file management is done on the SD card.
+- When listing files for download in the web dashboard, **only filenames from `/sd` are shown** (e.g., `darkbox_data.csv`), with no `sd/` prefix.
+- When downloading, the backend always prepends `/sd/` to the filename received from the browser.
+- **Because only the filename is sent to the browser and the backend always prepends `/sd/`, there is no need for a custom URL decoding fix for slashes (`%2F`).**
+- This approach eliminates the need to handle URL-encoded slashes and avoids confusion about file location.
+
+### Web Dashboard
+
+- The "Files" card in the dashboard now only lists and downloads CSV files from the SD card.
+- No console/log management buttons are present; the UI is streamlined for file management.
+- All file operations (listing, downloading) are restricted to the SD card.
+
+### Architecture Guidance
+
+- Do not list or attempt to access files from the root directory.
+- Do not use the `sd/` prefix in filenames sent to the browser.
+- Always access files as `/sd/filename.csv` in backend code.
+- **No custom URL decode function for slashes is needed.**
+
+---
+
+# filepath: /home/joepardue/wicdpico/architecture.md
+
+### File Management
+
+- **All log files are stored on the SD card** (`/sd`). The root directory is read-only and not used for logging.
+- The backend lists only CSV files from `/sd` and sends just the filename (e.g., `darkbox_data.csv`) to the browser.
+- When a file is requested for download, the backend constructs the path as `/sd/filename.csv`.
+- **This design avoids issues with URL-encoded slashes and eliminates the need for any custom URL decoding fix for slashes.**
+- File handling is now simple and robust.
+
+### Best Practices
+
+- Do not use the `sd/` prefix in filenames sent to the browser.
+- Always prepend `/sd/` in backend code when accessing files.
+- Avoid listing or accessing files from the root directory.
+- **No custom URL decode function for slashes is needed.**
+
+---

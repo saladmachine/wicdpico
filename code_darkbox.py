@@ -15,8 +15,8 @@ def main():
     foundation = WicdpicoFoundation()
 
     if foundation.initialize_network():
-        from module_darkbox import DarkboxModule
-        darkbox = DarkboxModule(foundation)
+        from module_darkbox import DarkBoxModule
+        darkbox = DarkBoxModule(foundation)
         foundation.register_module("darkbox", darkbox)
 
         from module_monitor import MonitorModule
@@ -32,7 +32,7 @@ def main():
         @foundation.server.route("/", methods=['GET'])
         def serve_dashboard(request):
             try:
-                dashboard_html = foundation.render_dashboard("WicdPico Darkbox Dashboard")
+                dashboard_html = foundation.render_dashboard("WicdPico Darkbox Dashboard 1.1")
                 return Response(request, dashboard_html, content_type="text/html")
             except Exception as e:
                 print(f"Dashboard error: {e}")

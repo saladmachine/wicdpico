@@ -32,7 +32,7 @@ def main():
         @foundation.server.route("/", methods=['GET'])
         def serve_dashboard(request):
             try:
-                dashboard_html = foundation.render_dashboard("WicdPico Darkbox Dashboard")
+                dashboard_html = foundation.render_dashboard("WicdPico Darkbox Dashboard 1.1")
                 return Response(request, dashboard_html, content_type="text/html")
             except Exception as e:
                 print(f"Dashboard error: {e}")
@@ -48,26 +48,6 @@ def main():
                 module.update()
             time.sleep(0.1)
             gc.collect()
-
-        def download_csv_file(self, request):
-            # Get filename from query string, default to JoeText.csv if not provided
-            try:
-                query = request.query_params
-                filename = query.get("file", "JoeText.csv")
-                if not filename.endswith(".csv"):
-                    return Response(request, "Invalid file type.", content_type="text/plain")
-                # Only look in root directory
-                try:
-                    with open("/" + filename, "r") as f:
-                        csv_data = f.read()
-                    headers = {
-                        "Content-Disposition": f'attachment; filename="{filename}"'
-                    }
-                    return Response(request, csv_data, content_type="text/csv", headers=headers)
-                except OSError:
-                    return Response(request, f"Error: {filename} not found.", content_type="text/plain")
-            except Exception as e:
-                return Response(request, f"Error downloading CSV file: {e}", content_type="text/plain")
 
 if __name__ == "__main__":
     main()
