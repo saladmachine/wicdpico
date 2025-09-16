@@ -10,7 +10,7 @@ import time
 import gc
 
 def main():
-    print("=== WICDPICO DARKBOX SYSTEM ===")
+    print("=== WICDPICO DARKBOX SYSTEM === 1.3")
     from foundation_core import WicdpicoFoundation
     foundation = WicdpicoFoundation()
 
