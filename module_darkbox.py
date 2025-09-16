@@ -1,5 +1,11 @@
 # SPDX-FileCopyrightText: 2025
 # SPDX-License-Identifier: MIT
+#
+# Architectural note (2025-09-16):
+# - Removed the dashboard route definition (`@foundation.server.route("/", ...)`) and its handler (`serve_dashboard`)
+#   from this module to comply with project architecture.md.
+# - This module now only registers REST API endpoints and provides dashboard widget HTML via get_dashboard_html().
+# - No other logic was changed.
 
 """
 DarkBox Module - Simple Implementation
