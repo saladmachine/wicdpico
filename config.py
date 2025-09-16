@@ -1,0 +1,1 @@
+WIFI_AP_TIMEOUT_MINUTES = 10  # Adjust as needed

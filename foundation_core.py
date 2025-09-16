@@ -72,6 +72,7 @@ import microcontroller
 from adafruit_httpserver import Server, Request, Response
 import gc
 from foundation_templates import TemplateSystem
+import config
 
 class Config:
     """
@@ -92,6 +93,15 @@ class Config:
     WIFI_MODE = "AP"  # Default to AP mode
     WIFI_AP_TIMEOUT_MINUTES = 10
     BLINK_INTERVAL = 0.25
+
+# AP timeout configuration
+WIFI_AP_TIMEOUT_MINUTES = getattr(config, "WIFI_AP_TIMEOUT_MINUTES", 10)
+WIFI_TIMEOUT_SECONDS = WIFI_AP_TIMEOUT_MINUTES * 60
+
+global last_activity_time
+last_activity_time = time.monotonic()
+ap_is_off_and_logged = False
+timeout_disabled = False  # Set to True to disable timeout
 
 class WicdpicoFoundation:
     """
@@ -432,7 +442,7 @@ class WicdpicoFoundation:
     def run_main_loop(self):
         """
         Main polling loop with module updates.
-        
+
         Continuously processes HTTP requests and updates all registered
         modules. Includes garbage collection for memory management.
         """
@@ -442,6 +452,8 @@ class WicdpicoFoundation:
             # Update all modules
             for module in self.modules.values():
                 module.update()
+
+            check_wifi_timeout()  # <-- Add this line
 
             time.sleep(0.1)
             gc.collect()
@@ -467,7 +479,8 @@ class WicdpicoFoundation:
             try:
                 module_html = module.get_dashboard_html()
                 if module_html:
-                    modules_html += f'<div class="module"><h3>Module: {name}</h3>{module_html}</div>\n'
+                    # modules_html += f'<div class="module"><h3>Module: {name}</h3>{module_html}</div>\n'  # useful for debug
+                    modules_html += module_html  # no wrapper, just inner HTML
             except Exception as e:
                 modules_html += f'<div class="module"><h3>{name}</h3><p>Error loading module: {e}</p></div>\n'
 
@@ -480,4 +493,37 @@ class WicdpicoFoundation:
             <p><strong>System status:</strong> {'Configuration Error' if self.config_failed else 'Ready'}</p>
         """
 
-        return self.templates.render_page(title, modules_html, system_info)
+        html = self.templates.render_page(title, modules_html, system_info)
+
+
+        return html
+
+def shut_down_wifi_and_sleep():
+    # Replace with your AP shutdown logic
+    print("Initiating Wi-Fi AP shutdown due to inactivity...")
+    try:
+        import wifi
+        if wifi.radio.enabled:
+            wifi.radio.stop_ap()
+            print("Wi-Fi AP shut down.")
+        else:
+            print("Wi-Fi AP already off.")
+    except Exception as e:
+        print(f"Error shutting down AP: {e}")
+
+def check_wifi_timeout():
+    global last_activity_time, ap_is_off_and_logged, timeout_disabled
+    if timeout_disabled:
+        return
+    now = time.monotonic()
+    if wifi.radio.enabled:
+        elapsed = now - last_activity_time
+        if elapsed > WIFI_TIMEOUT_SECONDS and not ap_is_off_and_logged:
+            shut_down_wifi_and_sleep()
+        elif not ap_is_off_and_logged:
+            remaining = WIFI_TIMEOUT_SECONDS - elapsed
+            print(f"AP active. Inactivity: {elapsed:.1f}s / Remaining: {remaining:.1f}s")
+    else:
+        if not ap_is_off_and_logged:
+            print("AP is already off.")
+            ap_is_off_and_logged = True
