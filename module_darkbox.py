@@ -423,7 +423,7 @@ class DarkBoxModule(WicdpicoModule):
         pass
 
     def get_dashboard_html(self):
-        """Dashboard with two cards: environment and light."""
+        """Dashboard with cards: environment, light, power, and Wi-Fi hotspot timeout."""
         co2_display = "---" if self.last_co2 is None else f"{self.last_co2}"
         temp_display = "---" if self.last_temp is None else f"{self.last_temp:.1f}"
         humidity_display = "---" if self.last_humidity is None else f"{self.last_humidity:.1f}"
@@ -462,6 +462,7 @@ class DarkBoxModule(WicdpicoModule):
         </script>
         """
 
+        # No outer card/wrapper here, just the inner cards
         return f'''
         <div class="module">
             <h3>Environment Sensor</h3>
@@ -499,8 +500,7 @@ class DarkBoxModule(WicdpicoModule):
             <p id="light-status">Ready for measurements</p>
         </div>
         {power_card}
-        <!-- Wi-Fi Hotspot Timeout Card (from picowide) -->
-        <div class="card" id="hotspot-timeout-card">
+        <div class="module" id="hotspot-timeout-card">
           <h3>Wi-Fi Hotspot Timeout</h3>
           <p id="hotspot-timeout-desc">
             By default, the Wi-Fi hotspot (AP) will shut down after a period of inactivity for security and power saving.
