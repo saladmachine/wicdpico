@@ -327,31 +327,6 @@ class DarkBoxModule(WicdpicoModule):
         def power_source(request: Request):
             return Response(request, self.power_state, content_type="text/plain")
 
-            @foundation.server.route("/", methods=['GET'])
-            def serve_dashboard(request):
-                try:
-                    dashboard_html = f"""
-                    <html>
-                    <head>
-                        <title>WicdPico DarkBox Dashboard</title>
-                        <meta name="viewport" content="width=device-width, initial-scale=1">
-                        {css}
-                    </head>
-                    <body>
-                        <!-- Removed: Page generated at: {timestamp} -->
-                        {darkbox.get_dashboard_html(self)}
-                        <div class="control-group">
-                            <button onclick="window.location.href='/calibration'">CO2 Calibration</button>
-                            <button onclick="fetch('/darkbox-clear-events', {{method:'POST'}}).then(()=>window.location.reload())">Clear Light Events</button>
-                        </div>
-                    </body>
-                    </html>
-                    """
-                    return Response(request, dashboard_html, content_type="text/html")
-                except Exception as e:
-                    print(f"Dashboard error: {e}")
-                    return Response(request, f"<h1>Dashboard Error</h1><p>{e}</p>", content_type="text/html")
-
         @server.route("/power-log", methods=['GET'])
         def power_log(request: Request):
             if not self.sd_mounted:
@@ -399,7 +374,7 @@ class DarkBoxModule(WicdpicoModule):
     def get_dashboard_html(self):
         """Dashboard with two cards: environment and light."""
         co2_display = "---" if self.last_co2 is None else f"{self.last_co2}"
-        temp_display = "---" if self.last_temp is None else f"{(self.last_temp * 1.8 + 32):.1f}"
+        temp_display = "---" if self.last_temp is None else f"{self.last_temp:.1f}"
         humidity_display = "---" if self.last_humidity is None else f"{self.last_humidity:.1f}"
         lux_display = "---" if self.last_lux is None else f"{self.last_lux:.1f}"
         
@@ -445,7 +420,7 @@ class DarkBoxModule(WicdpicoModule):
             <div style="display: flex; justify-content: space-around; text-align: center; margin-bottom: 20px;">
                 <div class="sensor-reading">
                     <span style="font-weight: bold;">Temperature</span><br>
-                    <span id="temp-value" style="font-size: 1.5em;">{temp_display}</span> F
+                    <span id="temp-value" style="font-size: 1.5em;">{temp_display}</span> C
                 </div>
                 <div class="sensor-reading">
                     <span style="font-weight: bold;">Humidity</span><br>
@@ -485,7 +460,7 @@ class DarkBoxModule(WicdpicoModule):
                 .then(data => {{
                     if (data.success) {{
                         document.getElementById('co2-value').textContent = data.co2;
-                        document.getElementById('temp-value').textContent = data.temp_f.toFixed(1);
+                        document.getElementById('temp-value').textContent = data.temp.toFixed(1);
                         document.getElementById('humidity-value').textContent = data.humidity.toFixed(1);
                         statusEl.textContent = 'Last reading successful.';
                     }} else {{

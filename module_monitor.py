@@ -85,18 +85,13 @@ class MonitorModule(WicdpicoModule):
                 self.console_buffer = self.console_buffer[-self.buffer_size//2:]
 
     def list_csv_files(self, request):
-        # List all .csv files in the root and /sd directories
+        # List all .csv files in the /sd directory only
         try:
             files = []
-            # List from root
-            for fname in os.listdir("/"):
-                if fname.endswith(".csv"):
-                    files.append(fname)
-            # List from SD card if available
             if "sd" in os.listdir("/"):
                 for fname in os.listdir("/sd"):
                     if fname.endswith(".csv"):
-                        files.append("sd/" + fname)
+                        files.append(fname)  # Only the filename, no sd/ prefix
             return Response(request, ",".join(files), content_type="text/plain")
         except Exception as e:
             return Response(request, f"Error listing CSV files: {e}", content_type="text/plain")
@@ -107,18 +102,11 @@ class MonitorModule(WicdpicoModule):
             filename = query.get("file", None)
             if not filename:
                 return Response(request, "No file specified.", content_type="text/plain")
-            
-            filename = filename.replace('--', '/') # Revert the separator back to a slash
-
             filename = url_unquote(filename)
             if not filename.endswith(".csv"):
                 return Response(request, "Invalid file type.", content_type="text/plain")
-            if filename.startswith("sd/"):
-                filepath = "/sd/" + filename[3:]
-                download_name = filename[3:]
-            else:
-                filepath = "/" + filename
-                download_name = filename
+            filepath = "/sd/" + filename  # Always use SD card
+            download_name = filename
             with open(filepath, "r") as f:
                 csv_data = f.read()
             headers = {

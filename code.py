@@ -32,7 +32,7 @@ def main():
         @foundation.server.route("/", methods=['GET'])
         def serve_dashboard(request):
             try:
-                dashboard_html = foundation.render_dashboard("WicdPico Darkbox Dashboard 1.1")
+                dashboard_html = foundation.render_dashboard("WicdPico Darkbox Dashboard 1.2")
                 return Response(request, dashboard_html, content_type="text/html")
             except Exception as e:
                 print(f"Dashboard error: {e}")
