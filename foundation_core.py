@@ -492,7 +492,56 @@ class WicdpicoFoundation:
             <p><strong>System status:</strong> {'Configuration Error' if self.config_failed else 'Ready'}</p>
         """
 
-        return self.templates.render_page(title, modules_html, system_info)
+        html = self.templates.render_page(title, modules_html, system_info)
+
+        html += """
+<!-- Wi-Fi Hotspot Timeout Card -->
+<div class="card" id="hotspot-timeout-card">
+  <h3>Wi-Fi Hotspot Timeout</h3>
+  <p id="hotspot-timeout-desc">
+    By default, the Wi-Fi hotspot (AP) will shut down after a period of inactivity for security and power saving.
+    You can disable this timeout to keep the AP open, or manually close it now.
+  </p>
+  <button id="hotspot-btn" onclick="toggleHotspotControl()">Loading...</button>
+  <div id="hotspot-result"></div>
+  </div>
+
+<script>
+function toggleHotspotControl() {
+    const btn = document.getElementById('hotspot-btn');
+    const resultDiv = document.getElementById('hotspot-result');
+    if (btn.textContent === 'Close Hotspot') {
+        if (confirm("Are you sure you want to close the Wi-Fi hotspot? A physical power cycle will be required to restart it.")) {
+            fetch('/toggle-hotspot-control', { method: 'POST' })
+                .then(() => {
+                    resultDiv.textContent =
+                        "Hotspot closed. Connection loss is normal. Power cycle to restore hotspot.";
+                    document.querySelectorAll('button').forEach(b => b.disabled = true);
+                })
+                .catch(() => {
+                    resultDiv.textContent =
+                        "Hotspot is shutting down. Connection loss is normal. Power cycle to restore hotspot.";
+                    document.querySelectorAll('button').forEach(b => b.disabled = true);
+                });
+        } else {
+            resultDiv.textContent = 'Hotspot closure cancelled.';
+        }
+    } else {
+        fetch('/toggle-hotspot-control', { method: 'POST' })
+            .then(() => {
+                btn.textContent = 'Close Hotspot';
+                resultDiv.textContent =
+                    'Automatic timeout disabled. Hotspot will remain open.';
+            })
+            .catch(error => {
+                resultDiv.textContent = 'Error: ' + error.message;
+            });
+    }
+}
+</script>
+"""
+
+        return html
 
 def shut_down_wifi_and_sleep():
     # Replace with your AP shutdown logic

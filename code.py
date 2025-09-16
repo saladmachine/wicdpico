@@ -34,7 +34,7 @@ def main():
             global last_activity_time
             last_activity_time = time.monotonic()
             try:
-                dashboard_html = foundation.render_dashboard("WicdPico Darkbox Dashboard 1.8")
+                dashboard_html = foundation.render_dashboard("WicdPico Darkbox Dashboard 1.9")
                 return Response(request, dashboard_html, content_type="text/html")
             except Exception as e:
                 print(f"Dashboard error: {e}")
