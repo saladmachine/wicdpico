@@ -479,7 +479,8 @@ class WicdpicoFoundation:
             try:
                 module_html = module.get_dashboard_html()
                 if module_html:
-                    modules_html += f'<div class="module"><h3>Module: {name}</h3>{module_html}</div>\n'
+                    # modules_html += f'<div class="module"><h3>Module: {name}</h3>{module_html}</div>\n'  # useful for debug
+                    modules_html += module_html  # no wrapper, just inner HTML
             except Exception as e:
                 modules_html += f'<div class="module"><h3>{name}</h3><p>Error loading module: {e}</p></div>\n'
 
