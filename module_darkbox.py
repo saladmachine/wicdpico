@@ -17,7 +17,13 @@ import digitalio
 import analogio
 from module_base import WicdpicoModule
 from adafruit_httpserver import Request, Response
+from foundation_core import shut_down_wifi_and_sleep
 
+
+# AP timeout state variables (ensure these are shared with your AP logic)
+timeout_disabled = False
+ap_is_off_and_logged = False
+last_activity_time = time.monotonic()
 
 # Try to import SCD4x library
 try:
@@ -264,22 +270,30 @@ class DarkBoxModule(WicdpicoModule):
         """Register HTTP routes for both sensors."""
         @server.route("/darkbox-environment", methods=['POST'])
         def environment_reading(request: Request):
+            global last_activity_time
+            last_activity_time = time.monotonic()
             reading = self.get_environment_reading()
             if reading['success']: reading['temp_f'] = reading['temp'] * 1.8 + 32
             return Response(request, json.dumps(reading), content_type="application/json")
 
         @server.route("/darkbox-light", methods=['POST'])
         def light_reading(request: Request):
+            global last_activity_time
+            last_activity_time = time.monotonic()
             reading = self.get_light_reading()
             return Response(request, json.dumps(reading), content_type="application/json")
 
         @server.route("/darkbox-calibration", methods=['POST'])
         def calibration(request: Request):
+            global last_activity_time
+            last_activity_time = time.monotonic()
             success, message = self.force_calibration(425)
             return Response(request, message, content_type="text/plain")
 
         @server.route("/darkbox-clear-events", methods=['POST'])
         def clear_events(request: Request):
+            global last_activity_time
+            last_activity_time = time.monotonic()
             count = len(self.light_events)
             self.light_events = []
             if self.current_event: self.current_event = None
@@ -287,17 +301,23 @@ class DarkBoxModule(WicdpicoModule):
         
         @server.route("/calibration", methods=['GET'])
         def calibration_page(request: Request):
+            global last_activity_time
+            last_activity_time = time.monotonic()
             html_content = self.get_calibration_html()
             full_page = self.foundation.templates.render_page("CO2 Calibration", html_content)
             return Response(request, full_page, content_type="text/html")
             
         @server.route("/darkbox-log", methods=['POST'])
         def log_data(request: Request):
+            global last_activity_time
+            last_activity_time = time.monotonic()
             result = self.log_sensor_data()
             return Response(request, result.get('message', result.get('error')), content_type="text/plain")
 
         @server.route("/darkbox-read-log", methods=['GET'])
         def read_log(request: Request):
+            global last_activity_time
+            last_activity_time = time.monotonic()
             if not self.sd_mounted:
                 return Response(request, "SD card not mounted.", content_type="text/plain")
             try:
@@ -309,6 +329,8 @@ class DarkBoxModule(WicdpicoModule):
 
         @server.route("/darkbox-read-light-log", methods=['GET'])
         def read_light_log(request: Request):
+            global last_activity_time
+            last_activity_time = time.monotonic()
             if not self.sd_mounted:
                 return Response(request, "SD card not mounted.", content_type="text/plain")
             try:
@@ -320,15 +342,21 @@ class DarkBoxModule(WicdpicoModule):
 
         @server.route("/power-voltage", methods=['POST'])
         def power_voltage(request: Request):
+            global last_activity_time
+            last_activity_time = time.monotonic()
             voltage = self.get_voltage()
             return Response(request, str(voltage), content_type="text/plain")
 
         @server.route("/power-source", methods=['POST'])
         def power_source(request: Request):
+            global last_activity_time
+            last_activity_time = time.monotonic()
             return Response(request, self.power_state, content_type="text/plain")
 
         @server.route("/power-log", methods=['GET'])
         def power_log(request: Request):
+            global last_activity_time
+            last_activity_time = time.monotonic()
             if not self.sd_mounted:
                 return Response(request, "SD card not mounted.", content_type="text/plain")
             try:
@@ -337,6 +365,23 @@ class DarkBoxModule(WicdpicoModule):
                 return Response(request, log_content, content_type="text/plain")
             except Exception as e:
                 return Response(request, f"Error reading power log: {e}", content_type="text/plain")
+
+        @server.route("/toggle-hotspot-control", methods=['POST'])
+        def toggle_hotspot_control(request: Request):
+            global timeout_disabled, ap_is_off_and_logged
+            if not timeout_disabled:
+                timeout_disabled = True
+                return Response(request, "Automatic timeout disabled. Hotspot will remain open.", content_type="text/plain")
+            else:
+                # If already disabled, user wants to close the hotspot now
+                shut_down_wifi_and_sleep()
+                ap_is_off_and_logged = True
+                return Response(request, "Hotspot closed. Power cycle required to restart.", content_type="text/plain")
+
+        @server.route("/get-hotspot-status", methods=['GET'])
+        def get_hotspot_status(request: Request):
+            global timeout_disabled
+            return Response(request, json.dumps({"timeout_disabled": timeout_disabled}), content_type="application/json")
 
     def _log_power_event_to_sd(self, event_type, prev_state, new_state, voltage):
         """Log power event to SD card."""
@@ -448,7 +493,76 @@ class DarkBoxModule(WicdpicoModule):
             <p id="light-status">Ready for measurements</p>
         </div>
         {power_card}
+        <!-- Wi-Fi Hotspot Timeout Card (from picowide) -->
+        <div class="card" id="hotspot-timeout-card">
+          <h3>Wi-Fi Hotspot Timeout</h3>
+          <p id="hotspot-timeout-desc">
+            By default, the Wi-Fi hotspot (AP) will shut down after a period of inactivity for security and power saving.
+            You can disable this timeout to keep the AP open, or manually close it now.
+          </p>
+          <button id="hotspot-btn" onclick="toggleHotspotControl()">Loading...</button>
+          <div id="hotspot-result"></div>
+        </div>
         <script>
+        function viewPowerLog() {{
+            fetch('/power-log')
+                .then(response => response.text())
+                .then(log => {{
+                    alert('Power Event Log:\\n' + log);
+                }})
+                .catch(error => {{
+                    alert('Error reading power log: ' + error.message);
+                }});
+        }}
+
+        // Wi-Fi Hotspot Timeout Card Logic (from picowide)
+        function updateHotspotButton() {{
+            fetch('/get-hotspot-status')
+                .then(response => response.json())
+                .then(status => {{
+                    const btn = document.getElementById('hotspot-btn');
+                    if (status.timeout_disabled) {{
+                        btn.textContent = 'Close Hotspot';
+                    }} else {{
+                        btn.textContent = 'Keep Hotspot Open';
+                    }}
+                }})
+                .catch(() => {{
+                    document.getElementById('hotspot-btn').textContent = 'Unavailable';
+                }});
+        }}
+
+        function toggleHotspotControl() {{
+            const btn = document.getElementById('hotspot-btn');
+            if (btn.textContent === 'Close Hotspot') {{
+                // Show confirmation before closing
+                if (confirm("Are you sure you want to close the Wi-Fi hotspot? A physical power cycle will be required to restart it.")) {{
+                    fetch('/toggle-hotspot-control', {{ method: 'POST' }})
+                        .then(response => response.text())
+                        .then(result => {{
+                            document.getElementById('hotspot-result').textContent = result;
+                            btn.disabled = true;
+                        }})
+                        .catch(error => {{
+                            document.getElementById('hotspot-result').textContent = 'Error: ' + error.message;
+                        }});
+                }}
+            }} else {{
+                fetch('/toggle-hotspot-control', {{ method: 'POST' }})
+                    .then(response => response.text())
+                    .then(result => {{
+                        btn.textContent = 'Close Hotspot';
+                        document.getElementById('hotspot-result').textContent = 'Automatic timeout disabled. Hotspot will remain open.';
+                    }})
+                    .catch(error => {{
+                        document.getElementById('hotspot-result').textContent = 'Error: ' + error.message;
+                    }});
+            }}
+        }}
+
+        // Initialize button state on page load
+        document.addEventListener('DOMContentLoaded', updateHotspotButton);
+
         function getEnvironmentReading() {{
             const btn = document.getElementById('environment-btn');
             const statusEl = document.getElementById('environment-status');
@@ -546,6 +660,25 @@ class DarkBoxModule(WicdpicoModule):
                 .finally(() => {{
                     btn.disabled = false;
                     btn.textContent = 'Read Light Log';
+                }});
+        }}
+        function toggleHotspotControl() {{
+            const btn = document.getElementById('hotspot-btn');
+            const resultEl = document.getElementById('hotspot-result');
+            btn.disabled = true;
+            btn.textContent = 'Toggling...';
+            fetch('/toggle-hotspot-control', {{ method: 'POST' }})
+                .then(response => response.text())
+                .then(message => {{
+                    resultEl.textContent = message;
+                    btn.textContent = 'Close Hotspot';
+                }})
+                .catch(error => {{
+                    resultEl.textContent = 'Error: ' + error.message;
+                    btn.textContent = 'Error';
+                }})
+                .finally(() => {{
+                    btn.disabled = false;
                 }});
         }}
         </script>

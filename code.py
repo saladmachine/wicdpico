@@ -10,7 +10,7 @@ import time
 import gc
 
 def main():
-    print("=== WICDPICO DARKBOX SYSTEM === 1.3")
+    print("=== WICDPICO DARKBOX SYSTEM ===")
     from foundation_core import WicdpicoFoundation
     foundation = WicdpicoFoundation()
 
@@ -31,8 +31,10 @@ def main():
         from adafruit_httpserver import Response
         @foundation.server.route("/", methods=['GET'])
         def serve_dashboard(request):
+            global last_activity_time
+            last_activity_time = time.monotonic()
             try:
-                dashboard_html = foundation.render_dashboard("WicdPico Darkbox Dashboard 1.2")
+                dashboard_html = foundation.render_dashboard("WicdPico Darkbox Dashboard 1.8")
                 return Response(request, dashboard_html, content_type="text/html")
             except Exception as e:
                 print(f"Dashboard error: {e}")
