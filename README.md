@@ -4,7 +4,7 @@
 
 ## Overview
 
-WicdPico is a modular platform for building I2C sensor instruments that serve interactive web dashboards. Suitable for environmental monitoring, data logging, and laboratory instrumentation - all accessible through any web browser.
+WicdPico is a modular platform for building I2C sensor instruments that serve interactive web dashboards. Suitable for environmental monitoring, data logging, and laboratory instrumentation - all as simple as swapping or stacking modules.
 
 ## Key Features
 
@@ -20,11 +20,11 @@ WicdPico is a modular platform for building I2C sensor instruments that serve in
 
 1. **Flash CircuitPython 9.0+** to your Pico 2 W
 2. **Copy files** to CIRCUITPY drive:
-   ```bash
-   git clone https://github.com/saladmachine/wicdpico.git
-   cp wicdpico/*.py /media/CIRCUITPY/
-   cp wicdpico/settings.toml /media/CIRCUITPY/
-   ```
+    ```bash
+    git clone https://github.com/saladmachine/wicdpico.git
+    cp wicdpico/*.py /media/CIRCUITPY/
+    cp wicdpico/settings.toml /media/CIRCUITPY/
+    ```
 3. **Connect to WiFi** hotspot "PicoTest-Node00" (password: testpass123)
 4. **Open browser** to http://192.168.4.1
 5. **View dashboard** with live sensor data and controls
@@ -81,6 +81,101 @@ cp code_sd_card_test.py code.py
 - Create `module_mynewsensor.py` inheriting from `WicdpicoModule`
 - Implement sensor reading, web interface, and dashboard widget
 - Register in your `code.py` configuration
+
+## Creating a Custom Application and Module
+
+You can create your own specialized sensor application by combining existing modules or developing your own. Here’s a step-by-step guide for a semi-skilled programmer to get started **without needing any external code or templates**:
+
+---
+
+### 1. Create a Custom Module
+
+All modules inherit from `WicdpicoModule` (defined in `module_base.py`).  
+A custom module typically implements:
+
+- `register_routes(self, server)`: Registers any web API endpoints for your sensor/control logic.
+- `get_dashboard_html(self)`: Returns the HTML (and optionally CSS/JS) for the dashboard widget.
+- `update(self)`: Performs periodic tasks such as sensor readings.
+
+**Minimal Example (`module_example.py`):**
+```python
+from module_base import WicdpicoModule
+
+class ExampleModule(WicdpicoModule):
+    def __init__(self, foundation):
+        super().__init__(foundation)
+        self.name = "Example"
+        self.path = "/example"
+        self.counter = 0
+
+    def register_routes(self, server):
+        @server.route("/increment", methods=["POST"])
+        def increment_handler(request):
+            self.counter += 1
+            return "Counter incremented!"
+
+    def get_dashboard_html(self):
+        return f"""
+        <div class="module">
+            <h3>Example Module</h3>
+            <p>Counter: <span id='counter'>{self.counter}</span></p>
+            <button onclick="fetch('/increment', {{method: 'POST'}}).then(_=>location.reload())">
+                Increment
+            </button>
+        </div>
+        """
+
+    def update(self):
+        # Called periodically by the system
+        pass
+```
+
+---
+
+### 2. Register Your Module in Your Application Entrypoint
+
+The main entrypoint is typically `code.py` or a custom `code_*.py` file.  
+You import your module, instantiate it, register it with the foundation, and then start the system.
+
+**Minimal Example (`code.py`):**
+```python
+from foundation_core import WicdpicoFoundation
+from module_example import ExampleModule
+
+foundation = WicdpicoFoundation()
+foundation.register_module("example", ExampleModule(foundation))
+
+if foundation.initialize_network():
+    foundation.start_server()
+    foundation.run_main_loop()
+```
+
+---
+
+### 3. Add Your Files
+
+- Place your custom module file (`module_example.py`) in the root of the CIRCUITPY drive.
+- Make sure your `code.py` imports it and registers it with the foundation as shown above.
+
+---
+
+### 4. View and Interact
+
+- Boot your device, connect to its WiFi, and open the web dashboard in your browser.
+- Your new module’s widget should appear and be interactive!
+
+---
+
+### 5. Tips
+
+- See `module_base.py` for required and optional methods.
+- Use the built-in web IDE (if enabled) to edit and experiment without ejecting the drive.
+- Use the `startup_print()` method for debugging output that appears on both the serial console and web dashboard.
+- You can add additional REST API endpoints to your module by defining them in `register_routes`.
+
+---
+
+**With these instructions, you do NOT need to reference any external code or templates. Everything you need to create a custom application and module is demonstrated above.**
 
 ## Example Applications
 
@@ -139,4 +234,4 @@ MIT License
 ## Acknowledgments
 Built with CircuitPython and adafruit_httpserver.
 
-AI Assistance Note: This project, including aspects of its code (e.g., structure, debugging assistance, error handling enhancements) and the drafting of this README.md, was significantly assisted by large language models, specifically Gemini by Google and Claude by Anthropic. This collaboration highlights the evolving landscape of modern open-source development, demonstrating how AI tools can empower makers to bring complex projects to fruition and achieve robust, production-ready implementations.
+AI Assistance Note: This project, including aspects of its code (e.g., structure, debugging assistance, error handling enhancements) and the drafting of this README.md, was significantly assisted by AI tools (Anthropic Claude, GitHub Copilot, ChatGPT). All code and text should be reviewed for accuracy and safety before use in production.
