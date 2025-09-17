@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPU Fan Module Dashboard Preview</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 0; 
+            padding: 10px;
+            background: #f5f5f5;
+        }
+        .container { 
+            max-width: 1200px; 
+            margin: 0 auto; 
+        }
+        .module { 
+            background: white;
+            border: 1px solid #ddd; 
+            border-radius: 8px;
+            padding: 15px; 
+            margin: 10px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .module h3 { 
+            margin-top: 0; 
+            color: #333;
+        }
+        button { 
+            padding: 12px 20px; 
+            margin: 5px; 
+            border: none;
+            border-radius: 5px;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            min-height: 44px;
+        }
+        button:hover { background: #0056b3; }
+        button:disabled { 
+            background: #ccc; 
+            cursor: not-allowed; 
+        }
+        .control-group {
+            margin: 15px 0;
+        }
+        .sensor-reading {
+            padding: 10px;
+        }
+        #fan-control-status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            background: #e9ecef;
+        }
+        @media (max-width: 768px) {
+            .container { padding: 5px; }
+            .module { padding: 10px; margin: 5px 0; }
+            button { width: 100%; margin: 5px 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>CPU Fan Module Dashboard Preview</h1>
+        
+        <div class="module">
+            <h3>CPU Fan Control</h3>
+            <div style="font-size: 24px; font-weight: bold; text-align: center; padding: 20px; border: 2px solid #007bff; margin: 10px 0;">
+                Speed: <span id="fan-speed-value">50</span>% | RPM: <span id="fan-rpm-value">1200</span>
+            </div>
+            <div style="display: flex; justify-content: space-around; text-align: center; margin-bottom: 20px;">
+                <div class="sensor-reading">
+                    <span style="font-weight: bold;">Status</span><br>
+                    <span id="fan-status-value" style="font-size: 1.5em;">Running</span>
+                </div>
+                <div class="sensor-reading">
+                    <span style="font-weight: bold;">Power Level</span><br>
+                    <span id="fan-power-level" style="font-size: 1.5em;">Normal</span>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h4 style="margin: 10px 0 5px 0; color: #666;">Speed Control</h4>
+                <div style="margin: 10px 0;">
+                    <input type="range" id="fan-speed-slider" min="0" max="100" value="50" 
+                           style="width: 100%; margin: 5px 0;" onchange="setFanSpeedSlider(this.value)">
+                    <div style="display: flex; justify-content: space-between; font-size: 0.9em; color: #666;">
+                        <span>0%</span>
+                        <span>50%</span>
+                        <span>100%</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="control-group">
+                <h4 style="margin: 10px 0 5px 0; color: #666;">Quick Controls</h4>
+                <button id="fan-stop-btn" onclick="setFanSpeed(0)" style="background: #dc3545;">Stop Fan</button>
+                <button id="fan-low-btn" onclick="setFanSpeed(25)" style="background: #28a745;">Low (25%)</button>
+                <button id="fan-medium-btn" onclick="setFanSpeed(50)" style="background: #007bff;">Medium (50%)</button>
+                <button id="fan-high-btn" onclick="setFanSpeed(75)" style="background: #fd7e14;">High (75%)</button>
+                <button id="fan-max-btn" onclick="setFanSpeed(100)" style="background: #dc3545;">Max (100%)</button>
+            </div>
+            
+            <div class="control-group">
+                <h4 style="margin: 10px 0 5px 0; color: #666;">Monitoring</h4>
+                <button id="fan-refresh-btn" onclick="refreshFanStatus()">Refresh Status</button>
+                <button id="fan-rpm-btn" onclick="getRPM()">Read RPM</button>
+            </div>
+            <p id="fan-control-status">Ready for fan control</p>
+        </div>
+        
+        <div style="margin: 20px 0; padding: 15px; background: #d4edda; border: 1px solid #c3e6cb; border-radius: 5px;">
+            <h4 style="color: #155724; margin-top: 0;">✅ Implementation Status</h4>
+            <ul style="color: #155724;">
+                <li><strong>Module Structure:</strong> Follows WicdPico architecture patterns</li>
+                <li><strong>REST API:</strong> Consistent with Darkbox module endpoints</li>
+                <li><strong>Dashboard Styling:</strong> Uses shared CSS classes and responsive design</li>
+                <li><strong>JavaScript:</strong> Scoped to module widget, avoids conflicts</li>
+                <li><strong>Hardware Support:</strong> PWM control (GP16) and RPM sensing (GP17)</li>
+                <li><strong>Error Handling:</strong> Graceful degradation when hardware unavailable</li>
+                <li><strong>Mobile Friendly:</strong> Touch-friendly buttons and responsive layout</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function setFanSpeed(speedPercent) {
+            // Demo implementation - would normally call REST API
+            document.getElementById('fan-speed-value').textContent = speedPercent;
+            document.getElementById('fan-speed-slider').value = speedPercent;
+            
+            const powerLevel = speedPercent < 80 ? 'Normal' : 'High';
+            document.getElementById('fan-power-level').textContent = powerLevel;
+            
+            const status = speedPercent > 0 ? 'Running' : 'Stopped';
+            document.getElementById('fan-status-value').textContent = status;
+            
+            document.getElementById('fan-control-status').innerHTML = '<strong>Demo:</strong> Fan speed set to ' + speedPercent + '%';
+            document.getElementById('fan-control-status').style.background = '#d4edda';
+            document.getElementById('fan-control-status').style.borderLeft = '4px solid #28a745';
+        }
+        
+        function setFanSpeedSlider(speedPercent) {
+            setFanSpeed(speedPercent);
+        }
+        
+        function getRPM() {
+            // Demo implementation - would normally call REST API
+            const mockRPM = Math.floor(Math.random() * 500) + 800; // 800-1300 RPM
+            document.getElementById('fan-rpm-value').textContent = mockRPM;
+            document.getElementById('fan-control-status').innerHTML = '<strong>Demo:</strong> RPM reading: ' + mockRPM;
+            document.getElementById('fan-control-status').style.background = '#d1ecf1';
+            document.getElementById('fan-control-status').style.borderLeft = '4px solid #17a2b8';
+        }
+        
+        function refreshFanStatus() {
+            // Demo implementation
+            getRPM();
+            document.getElementById('fan-control-status').innerHTML = '<strong>Demo:</strong> Status refreshed successfully';
+        }
+    </script>
+</body>
+</html>
