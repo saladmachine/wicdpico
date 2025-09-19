@@ -1,55 +1,58 @@
 # SPDX-FileCopyrightText: 2025
 # SPDX-License-Identifier: MIT
-
+#
+# code_cpu_fan.py
 """
-Main entry point for Darkbox system using modular WicdPico workflow.
-Registers both Darkbox and Monitor modules for dashboard and CSV export.
+WicdPico CPU Fan Controller Application Entrypoint
+
+Minimal entrypoint for the CPU Fan module, following WicdPico conventions.
+Sets up the foundation, registers the module, and starts the HTTP server and polling loop.
 """
 
 import time
-import gc
+from foundation_core import WicdpicoFoundation
+from module_cpu_fan import CpuFanModule
 
 def main():
-    print("=== WICDPICO DARKBOX SYSTEM ===")
-    from foundation_core import WicdpicoFoundation
+    """
+    Main entrypoint for the WicdPico CPU Fan Controller application.
+    Initializes the foundation, registers the CPU fan module, and starts the server.
+    """
+    print("=== WicdPico CPU Fan Controller ===")
+    print("Initializing foundation...")
     foundation = WicdpicoFoundation()
 
-    if foundation.initialize_network():
-        from module_darkbox import DarkBoxModule
-        darkbox = DarkBoxModule(foundation)
-        foundation.register_module("darkbox", darkbox)
+    if foundation.initialize_network():  # <-- Add this check
+        print("Loading CPU Fan module...")
+        cpu_fan_module = CpuFanModule(foundation)
+        foundation.register_module("cpu_fan", cpu_fan_module)
 
-        from module_monitor import MonitorModule
-        monitor = MonitorModule(foundation)
-        foundation.register_module("monitor", monitor)
+        print("Starting HTTP server...")
+        foundation.start_server()  # <-- Start the server first!
 
-        # Register module routes
-        darkbox.register_routes(foundation.server)
-        monitor.register_routes(foundation.server)
+        print("foundation.server =", foundation.server)
+        assert foundation.server is not None, "foundation.server is None! Cannot register routes."
+        print("Registering module routes...")
+        cpu_fan_module.register_routes(foundation.server)
 
-        # Serve dashboard route
-        from adafruit_httpserver import Response
         @foundation.server.route("/", methods=['GET'])
         def serve_dashboard(request):
-            global last_activity_time
-            last_activity_time = time.monotonic()
-            try:
-                dashboard_html = foundation.render_dashboard("Darkbox Dashboard 1.02")
-                return Response(request, dashboard_html, content_type="text/html")
-            except Exception as e:
-                print(f"Dashboard error: {e}")
-                return Response(request, f"<h1>Dashboard Error</h1><p>{e}</p>", content_type="text/html")
+            """
+            Serve the main dashboard page.
+            """
+            html = foundation.render_dashboard()
+            return foundation.html_response(request, html)
 
-        foundation.start_server()
-        print("✓ Darkbox dashboard ready. Access via browser.")
-
-        # Main loop: poll the server and allow time for requests
-        while True:
-            foundation.server.poll()
-            for module in foundation.modules.values():
-                module.update()
-            time.sleep(0.1)
-            gc.collect()
+        print("Entering main polling loop. Press Ctrl+C to exit.")
+        try:
+            while True:
+                for module in foundation.modules.values():
+                    module.update()
+                time.sleep(0.1)
+        except KeyboardInterrupt:
+            print("Shutting down.")
+    else:
+        print("Network initialization failed.")
 
 if __name__ == "__main__":
     main()

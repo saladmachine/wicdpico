@@ -1,95 +1,178 @@
-# WicdPico System Architecture
+# DarkBox System Architecture
 
 ## Overview
 
-WicdPico is a modular sensor and control platform for the Raspberry Pi Pico 2 W, built with CircuitPython.  
-It provides a standalone WiFi hotspot and a web-based dashboard for real-time monitoring, control, and data logging.
+The DarkBox system is a modular, open-source instrumentation and control platform for research in acetate-based plant growth under strictly controlled environmental conditions. It is built on the WicdPico foundation, with all core logic written in CircuitPython and designed for reproducibility, reliability, and adaptability.
 
 ---
 
-## Core Components
+### Repository Structure
+```
+darkbox/
+├── wicdpico/                    # Git submodule to WicdPico platform
+├── darkbox_modules/             # DarkBox-specific modules
+│   ├── module_hydroponic.py     # Solution management (Phase 2)
+│   ├── module_darkness.py       # Light monitoring and safety
+│   └── module_chamber.py        # Environmental control
+├── phase1/                      # Petri dish system configuration
+│   └── code_phase1.py           # Phase 1 main application
+├── phase2/                      # Hydroponic system configuration  
+│   └── code_phase2.py           # Phase 2 main application
+├── lib/                         # Symlinks to WicdPico modules
+├── docs/                        # Research documentation
+└── scripts/                     # Development and deployment tools
+```
 
-### 1. Foundation Layer
+## Safety & Validation
 
-- **File:** `foundation_core.py`
-- **Class:** `WicdpicoFoundation`
-- **Responsibilities:**
-  - Manages network setup (AP/client modes)
-  - Initializes and starts the HTTP server
-  - Registers modules and integrates their web routes
-  - Renders the main dashboard by collecting HTML fragments from modules
-  - Handles configuration loading (from `settings.toml` or `config.py`)
-  - Provides system status and error recovery
+### Pre-Research Testing
+- **System integrity**: Complete darkness verification using light sensors
+- **Environmental stability**: Temperature, humidity, CO2 control validation  
+- **Solution management**: Pumping, level sensing, bubbler operation (Phase 2)
+- **Data logging**: Continuous monitoring and backup systems
+- **Remote monitoring**: VCP accessibility for experiment oversight
 
-### 2. Module Layer
+### Research Protection
+- **No light contamination**: Multiple redundant darkness monitoring
+- **Stable environment**: Automated control with manual override capability
+- **Data backup**: Multiple logging systems to prevent data loss
+- **Remote access**: Monitor experiments without physical chamber access
 
-- **Files:** `module_*.py`
-- **Base Class:** `WicdpicoModule` (from `module_base.py`)
-- **Responsibilities:**
-  - Encapsulate sensor/control logic (e.g., SCD41, BH1750, SD card, battery monitor)
-  - Provide REST endpoints for sensor readings, control actions, and data logging
-  - Supply dashboard widgets via `get_dashboard_html()` for integration into the main dashboard
-  - Register their routes with the foundation's HTTP server
+## Development Workflow
 
-### 3. Application Layer
+### VSCode Integration
+- **Code templates**: `phase1/code_phase1.py` → `code.py` deployment
+- **Automated sync**: Save triggers copy to both local git and CIRCUITPY drive
+- **Serial monitoring**: Real-time system feedback during development
+- **Module management**: Automatic copying of dependencies to Pico
 
-- **Files:** `code.py`, `code_darkbox.py`, etc.
-- **Responsibilities:**
-  - Entry point for the application
-  - Instantiates the foundation and modules
-  - Registers modules with the foundation
-  - Starts the network and server
-  - Serves the main dashboard route (`/`)
-  - Runs the main polling loop
+### Dependency Management
+- **WicdPico sync**: Controlled updates via Git submodule versioning
+- **One-way dependency**: DarkBox uses WicdPico, no reverse dependencies
+- **Version control**: Lock to specific WicdPico commits for stability
 
-### 4. Configuration Layer
+## Academic Context
 
-- **Files:** `settings.toml`, `config.py`
-- **Responsibilities:**
-  - Store user and system configuration (WiFi, module settings, etc.)
-  - Provide configuration data to the foundation and modules
+### Publication Target
+- **Journal**: HardwareX - open source scientific hardware
+- **Timeline**: Support publication within 6 months
+- **Focus**: Reproducible low-cost research instrumentation
+- **Audience**: Academic researchers requiring specialized controlled environments
 
-### 5. Templates & Utilities
+### Research Value
+- **Novel growth method**: Darkbox system supports study of acetate metabolism instead of photosynthesis
+- **Cost-effective platform**: Academic-grade instrumentation at maker prices
+- **Reproducible design**: Open source hardware enabling research replication
+- **Modular architecture**: Adaptable to other controlled environment applications
 
-- **File:** `foundation_templates.py`
-- **Responsibilities:**
-  - Renders HTML pages and dashboard layouts
-  - Provides reusable UI components
+## License
 
----
-
-## Architectural Principles
-
-- **Modularity:** Each sensor/control module is self-contained and interacts with the foundation via a well-defined interface.
-- **Separation of Concerns:** The foundation manages system-level tasks; modules handle device-specific logic; the main file orchestrates the application.
-- **Web Integration:** All user interaction is via a web dashboard, assembled from module widgets.
-- **Configuration Priority:** `settings.toml` is preferred, with fallback to `config.py` and robust defaults.
-- **Extensibility:** New modules can be added easily by following the established base class and registration pattern.
-
----
-
-## Architectural Violations (from open files)
-
-1. **Dashboard Route in Module**
-   - In `module_darkbox.py`, the dashboard route (`serve_dashboard`) is still present and **nested inside another route**.  
-     **Violation:** The dashboard route should only be defined in the main application file (e.g., `code.py` or `code_darkbox.py`), not in any module.  
-     **Fix:** Remove the dashboard route from `module_darkbox.py`.
-
-2. **Route Nesting**
-   - In `module_darkbox.py`, the dashboard route is nested inside the `read_light_log` route.  
-     **Violation:** Routes should not be nested; each route should be defined at the top level within the `register_routes` method.
-
-3. **Module HTML Integration**
-   - All modules should provide dashboard widgets via `get_dashboard_html()`, not serve full dashboard pages.
+MIT License
 
 ---
 
-## Summary
+## Dependencies
 
-The WicdPico architecture is robust, modular, and extensible, supporting a wide range of sensor and control modules.  
-To maintain architectural integrity, ensure that:
-- The dashboard route is only served from the main application file.
-- Modules only provide REST endpoints and dashboard widgets.
-- Route definitions are not nested within each other.
+This project depends on the WicdPico platform:
+- **Repository**: https://github.com/saladmachine/wicdpico
+- **Integration**: Git submodule for controlled dependency management
+- **Documentation**: See WicdPico README for core platform capabilities
 
-**Adhering to these principles will keep the system maintainable and scalable.**
+Built with CircuitPython and the Adafruit ecosystem for academic research applications.
+
+AI Assistance Note: This project, including aspects of its code (e.g., structure, debugging assistance, error handling enhancements) and the drafting of this README.md, was significantly assisted by large language models, specifically Gemini by Google and Claude by Anthropic. This collaboration highlights the evolving landscape of modern open-source development, demonstrating how AI tools can empower makers to bring complex projects to fruition and achieve robust, production-ready implementations.
+
+---
+
+# Persistent Application State and Configuration
+
+## Motivation
+
+To ensure device and experimental continuity after power loss or system reboot, all DarkBox and compatible WicdPico applications must persist configuration and runtime state to non-volatile storage. This enables restoration of the last known state and consistent application behavior across sessions.
+
+## Standard Mechanism: SD Card JSON Config
+
+**All modules and applications must:**
+- Store persistent configuration and state in a dedicated JSON file on the SD card.
+- Use application-specific filenames, e.g. `darkbox.json`, `cpu_fan.json`, stored in `/sd/settings/` or another clearly documented location.
+- Load the JSON file at startup to reestablish the previous state.
+- Save to the JSON file whenever persistent values change, using atomic file writes for reliability.
+
+### File Layout Example
+
+```
+/sd/settings/
+    darkbox.json
+    cpu_fan.json
+    hydroponic.json
+```
+
+### Example JSON Content
+
+```json
+{
+  "ap_timeout_minutes": 10,
+  "fan_speed": 80,
+  "fan_enabled": true
+}
+```
+
+### Implementation Guidelines
+
+- **Atomic Write:** Always write to a temporary file (e.g. `cpu_fan.json.tmp`) then rename to the final file to prevent corruption.
+- **Error Handling:** Gracefully handle missing, unreadable, or corrupted files; fall back to defaults and log any issues.
+- **Human-Readable:** Keep files simple and editable by researchers.
+- **Minimal Writes:** Only save when state changes to minimize SD card wear.
+- **Consistent Pattern:** All modules use the same load/save pattern for maintainability.
+
+### Startup and Runtime Workflow
+
+1. **At Startup:**
+   - Attempt to load the JSON config from SD card.
+   - If missing/corrupt, initialize state from defaults and (optionally) create the config file.
+
+2. **During Operation:**
+   - When a persistent property changes (e.g., a user updates a setting via the web interface), write the new state to the JSON config using atomic write.
+
+3. **At Shutdown:** 
+   - No special action required; state is always current after each change.
+
+### Example Usage Pattern
+
+```python
+import json
+import os
+
+CONFIG_PATH = "/sd/settings/cpu_fan.json"
+
+def load_config():
+    try:
+        with open(CONFIG_PATH, "r") as f:
+            return json.load(f)
+    except Exception:
+        # Log error, return defaults
+        return {"fan_speed": 80, "fan_enabled": True}
+
+def save_config(config):
+    tmp_path = CONFIG_PATH + ".tmp"
+    with open(tmp_path, "w") as f:
+        json.dump(config, f)
+    os.rename(tmp_path, CONFIG_PATH)
+```
+
+## Migration Plan
+
+- **New code:** All new modules/applications must follow this pattern.
+- **Retrofit:** Older code using Pico flash or hardcoded config will be updated to use SD card JSON config as time allows.
+
+## Rationale
+
+- **Reliability:** SD card file system is robust and power-failure tolerant.
+- **Transparency:** Researchers can inspect and edit config files externally if needed.
+- **Consistency:** Standardized mechanism improves maintainability and onboarding.
+
+## See Also
+
+- [WicdPico Documentation](https://github.com/saladmachine/wicdpico)
+- [Module Implementation Examples](/darkbox_modules/)
+- [Phase 1/2 Main Application Code](/phase1/code_phase1.py, /phase2/code_phase2.py)

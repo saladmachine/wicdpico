@@ -483,7 +483,6 @@ class DarkBoxModule(WicdpicoModule):
                 <button id="environment-btn" onclick="getEnvironmentReading()">Get Reading</button>
                 <button onclick="window.location.href='/calibration'">Calibration</button>
                 <button id="log-btn" onclick="logData()">Log to SD</button>
-                <button id="read-log-btn" onclick="readLogFile()">Read Log File</button>
             </div>
             <p id="environment-status">Ready for measurements</p>
         </div>
@@ -617,23 +616,7 @@ class DarkBoxModule(WicdpicoModule):
                 .catch(error => {{ statusEl.textContent = 'Log Error: ' + error.message; }})
                 .finally(() => {{ btn.disabled = false; btn.textContent = 'Log to SD'; }});
         }}
-        function readLogFile() {{
-            const btn = document.getElementById('read-log-btn');
-            btn.disabled = true;
-            btn.textContent = 'Reading...';
-            fetch('/darkbox-read-log')
-                .then(response => response.text())
-                .then(log => {{
-                    alert('Log File Contents:\\n' + log);
-                }})
-                .catch(error => {{
-                    alert('Error reading log: ' + error.message);
-                }})
-                .finally(() => {{
-                    btn.disabled = false;
-                    btn.textContent = 'Read Log File';
-                }});
-        }}
+
         function clearLightEvents() {{
             const btn = document.getElementById('clear-events-btn');
             btn.disabled = true;
@@ -835,4 +818,3 @@ class DarkBoxModule(WicdpicoModule):
     def cleanup(self):
         """Cleanup on shutdown."""
         pass
-
