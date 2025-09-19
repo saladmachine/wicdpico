@@ -1,69 +1,174 @@
-# DarkBox System Architecture
+# WicdPico System Architecture
 
 ## Overview
 
-The DarkBox system is a modular, open-source instrumentation and control platform for research in acetate-based plant growth under strictly controlled environmental conditions. It is built on the WicdPico foundation, with all core logic written in CircuitPython and designed for reproducibility, reliability, and adaptability.
+WicdPico is a modular sensor and control platform for the Raspberry Pi Pico 2 W, built with CircuitPython.  
+It provides a standalone WiFi hotspot and a web-based dashboard for real-time monitoring, control, and data logging.
 
 ---
 
-### Repository Structure
+## Core Components
+
+- **foundation_core.py**: Core system for WiFi/network, web server, module registration, and settings loading.
+- **module_base.py**: Abstract base class defining the interface for all modules (sensor and system modules).
+- **module_*.py**: Pluggable sensor, peripheral, and system modules (see below).
+- **system_*.py**: System/application entrypoints—compose, orchestrate, and integrate multiple modules into a working application. (See below for details.)
+- **code_*.py**: Legacy or test harness entrypoints. May still be used for single-module or experimental setups.
+- **settings.toml**: Configuration file, preferred over legacy config.py.
+
+---
+
+## File & Naming Conventions
+
+### Modules
+
+- All hardware drivers, sensor logic, and system controls are implemented as `module_<name>.py`.
+- Each module inherits from `WicdpicoModule` and is registered with the foundation in a system or code file.
+- Common modules include:
+  - `module_sht45.py`: SHT45 temperature/humidity sensor
+  - `module_scd41.py`: SCD41 CO₂/temperature/humidity sensor
+  - `module_bh1750.py`: BH1750 light sensor
+  - `module_led_control.py`: Onboard LED control
+  - `module_rtc_control.py`: PCF8523 RTC
+  - `module_sd_card.py`: SD card storage
+  - `module_battery_monitor.py`: Battery/VSYS monitoring
+  - `module_monitor.py`: In-system monitor & console
+  - (and others as needed for hardware or features)
+
+### System Files
+
+- **`system_<name>.py`**:  
+  - Application/system entrypoints that compose and orchestrate multiple modules into a complete working device or research platform.
+  - Responsible for:
+    - Instantiating `WicdpicoFoundation`
+    - Registering and configuring modules
+    - Setting up all web routes, including the main dashboard
+    - Managing the application main loop (polling server, calling `.update()` on modules, handling system-level events)
+    - Loading configuration from `settings.toml`
+  - Examples:
+    - `system_darkbox.py`: Full DarkBox application integrating CO₂, light, RTC, SD, and other modules
+    - `system_hydroponic.py`, etc.
+  - The `system_*.py` convention formalizes the role of these files as multi-module, production-ready, application orchestrators.
+  - For deployment, either copy `system_<name>.py` to `code.py` or configure the development workflow to launch the desired system file directly (if supported by the firmware).
+
+### Application and Test Harnesses
+
+- **`code_*.py`**:  
+  - Legacy, experimental, or test entrypoints.
+  - Typically used for single-module validation, development, or prototyping.
+  - Follow the same structure as system files, but usually only instantiate and register one module.
+  - Still supported for rapid development and hardware bring-up.
+
+- **`code.py`**:  
+  - The file actually executed on boot by CircuitPython.
+  - In practice, this will be a copy of the desired `system_*.py` or `code_*.py` application.
+
+### Example Structure
+
 ```
-darkbox/
-├── wicdpico/                    # Git submodule to WicdPico platform
-├── darkbox_modules/             # DarkBox-specific modules
-│   ├── module_hydroponic.py     # Solution management (Phase 2)
-│   ├── module_darkness.py       # Light monitoring and safety
-│   └── module_chamber.py        # Environmental control
-├── phase1/                      # Petri dish system configuration
-│   └── code_phase1.py           # Phase 1 main application
-├── phase2/                      # Hydroponic system configuration  
-│   └── code_phase2.py           # Phase 2 main application
-├── lib/                         # Symlinks to WicdPico modules
-├── docs/                        # Research documentation
-└── scripts/                     # Development and deployment tools
+/CIRCUITPY/
+├── foundation_core.py
+├── foundation_templates.py
+├── module_base.py
+├── module_sht45.py
+├── module_scd41.py
+├── module_bh1750.py
+├── module_led_control.py
+├── module_rtc_control.py
+├── module_sd_card.py
+├── module_battery_monitor.py
+├── module_monitor.py
+├── system_darkbox.py
+├── system_hydroponic.py
+├── code_sht45.py
+├── code_scd41.py
+├── code_bh1750.py
+├── code_darkbox.py
+├── code_cpu_fan.py
+├── code_monitor.py
+├── settings.toml
+└── code.py           # The active app (copy of one of system_*.py or code_*.py)
 ```
 
-## Safety & Validation
+---
 
-### Pre-Research Testing
-- **System integrity**: Complete darkness verification using light sensors
-- **Environmental stability**: Temperature, humidity, CO2 control validation  
-- **Solution management**: Pumping, level sensing, bubbler operation (Phase 2)
-- **Data logging**: Continuous monitoring and backup systems
-- **Remote monitoring**: VCP accessibility for experiment oversight
+## System Initialization & Workflow
 
-### Research Protection
-- **No light contamination**: Multiple redundant darkness monitoring
-- **Stable environment**: Automated control with manual override capability
-- **Data backup**: Multiple logging systems to prevent data loss
-- **Remote access**: Monitor experiments without physical chamber access
+1. **Select Application/System**:  
+   Copy the desired `system_*.py` or `code_*.py` to `code.py`.
 
-## Development Workflow
+2. **Startup**:  
+   On boot, `code.py`:
+   - Instantiates `WicdpicoFoundation`
+   - Loads configuration from `settings.toml`
+   - Initializes WiFi (AP or Client mode)
+   - Registers modules and their HTTP/web routes
+   - Starts the web server and enters the main loop
 
-### VSCode Integration
-- **Code templates**: `phase1/code_phase1.py` → `code.py` deployment
-- **Automated sync**: Save triggers copy to both local git and CIRCUITPY drive
-- **Serial monitoring**: Real-time system feedback during development
-- **Module management**: Automatic copying of dependencies to Pico
+3. **Module Pattern**:  
+   All modules:
+   - Inherit from `WicdpicoModule`
+   - Implement `register_routes(server)`, `get_dashboard_html()`, `update()`, and other lifecycle methods
+   - Are registered with the foundation and exposed on the dashboard
 
-### Dependency Management
-- **WicdPico sync**: Controlled updates via Git submodule versioning
-- **One-way dependency**: DarkBox uses WicdPico, no reverse dependencies
-- **Version control**: Lock to specific WicdPico commits for stability
+4. **System File Pattern**:  
+   - System files (`system_*.py`) define the device or application's top-level logic and integration.
+   - They enable clear distinction between reusable modules and composed, production-grade systems.
 
-## Academic Context
+5. **Dashboard**:  
+   - The dashboard web route (usually `/`) is registered in the system or application file and renders all registered modules using the foundation's template and layout system.
 
-### Publication Target
-- **Journal**: HardwareX - open source scientific hardware
-- **Timeline**: Support publication within 6 months
-- **Focus**: Reproducible low-cost research instrumentation
-- **Audience**: Academic researchers requiring specialized controlled environments
+6. **Main Loop**:  
+   - The main loop polls the HTTP server and calls `.update()` on each module for periodic work.
 
-### Research Value
-- **Novel growth method**: Darkbox system supports study of acetate metabolism instead of photosynthesis
-- **Cost-effective platform**: Academic-grade instrumentation at maker prices
-- **Reproducible design**: Open source hardware enabling research replication
-- **Modular architecture**: Adaptable to other controlled environment applications
+---
+
+## Configuration & Extensibility
+
+- **settings.toml** is the canonical place for user and module config (network, sensor options, etc.)
+- Each module may define its own config block/section in `settings.toml`.
+- Legacy `config.py` is supported as fallback.
+- New modules should be added as `module_<name>.py` and registered in a custom `system_*.py` or `code_*.py` application template.
+
+---
+
+## Hardware Patterns
+
+- **I2C Bus**: GP4 (SDA), GP5 (SCL) for sensors (unless otherwise noted)
+- **SD Card**: SPI interface, mounted at `/sd`
+- **LED**: Onboard LED (GPIO25)
+- **RTC**: PCF8523 via I2C
+- **Power**: USB or battery (VSYS monitored by battery module)
+
+---
+
+## Best Practices
+
+- Use `code_*.py` files for module development and testing.
+- Use `system_*.py` for integrated, production-ready systems.
+- Compose multi-module systems by copying and extending `system_*.py` templates.
+- Keep modules in the root directory for reliable imports in CircuitPython.
+- Register all module web routes and ensure each module supplies a dashboard HTML snippet or API.
+- Prefer simple, direct hardware interaction and avoid unnecessary abstraction for reliability.
+
+---
+
+## Embedded & CircuitPython Coding Principles
+
+- **Separation of Concerns**:  
+  Modules encapsulate device-level or logical functionality; system files manage integration and orchestration.
+- **Composability & Scalability**:  
+  Systems are composed from well-defined, reusable modules.
+- **Testability**:  
+  Modules can be tested in isolation; systems can be tested at the integration level.
+- **Clarity**:  
+  The naming convention (`module_*.py`, `system_*.py`, `code_*.py`) communicates intent and structure.
+- **Resource Awareness**:  
+  Structure does not impact RAM/ROM or firmware constraints—it's a filename and workflow convention.
+- **CircuitPython Alignment**:  
+  `code.py` remains the executed entrypoint, with a workflow supporting templated, version-controlled applications.
+
+---
 
 ## License
 
@@ -71,108 +176,8 @@ MIT License
 
 ---
 
-## Dependencies
-
-This project depends on the WicdPico platform:
-- **Repository**: https://github.com/saladmachine/wicdpico
-- **Integration**: Git submodule for controlled dependency management
-- **Documentation**: See WicdPico README for core platform capabilities
-
-Built with CircuitPython and the Adafruit ecosystem for academic research applications.
-
-AI Assistance Note: This project, including aspects of its code (e.g., structure, debugging assistance, error handling enhancements) and the drafting of this README.md, was significantly assisted by large language models, specifically Gemini by Google and Claude by Anthropic. This collaboration highlights the evolving landscape of modern open-source development, demonstrating how AI tools can empower makers to bring complex projects to fruition and achieve robust, production-ready implementations.
-
----
-
-# Persistent Application State and Configuration
-
-## Motivation
-
-To ensure device and experimental continuity after power loss or system reboot, all DarkBox and compatible WicdPico applications must persist configuration and runtime state to non-volatile storage. This enables restoration of the last known state and consistent application behavior across sessions.
-
-## Standard Mechanism: SD Card JSON Config
-
-**All modules and applications must:**
-- Store persistent configuration and state in a dedicated JSON file on the SD card.
-- Use application-specific filenames, e.g. `darkbox.json`, `cpu_fan.json`, stored in `/sd/settings/` or another clearly documented location.
-- Load the JSON file at startup to reestablish the previous state.
-- Save to the JSON file whenever persistent values change, using atomic file writes for reliability.
-
-### File Layout Example
-
-```
-/sd/settings/
-    darkbox.json
-    cpu_fan.json
-    hydroponic.json
-```
-
-### Example JSON Content
-
-```json
-{
-  "ap_timeout_minutes": 10,
-  "fan_speed": 80,
-  "fan_enabled": true
-}
-```
-
-### Implementation Guidelines
-
-- **Atomic Write:** Always write to a temporary file (e.g. `cpu_fan.json.tmp`) then rename to the final file to prevent corruption.
-- **Error Handling:** Gracefully handle missing, unreadable, or corrupted files; fall back to defaults and log any issues.
-- **Human-Readable:** Keep files simple and editable by researchers.
-- **Minimal Writes:** Only save when state changes to minimize SD card wear.
-- **Consistent Pattern:** All modules use the same load/save pattern for maintainability.
-
-### Startup and Runtime Workflow
-
-1. **At Startup:**
-   - Attempt to load the JSON config from SD card.
-   - If missing/corrupt, initialize state from defaults and (optionally) create the config file.
-
-2. **During Operation:**
-   - When a persistent property changes (e.g., a user updates a setting via the web interface), write the new state to the JSON config using atomic write.
-
-3. **At Shutdown:** 
-   - No special action required; state is always current after each change.
-
-### Example Usage Pattern
-
-```python
-import json
-import os
-
-CONFIG_PATH = "/sd/settings/cpu_fan.json"
-
-def load_config():
-    try:
-        with open(CONFIG_PATH, "r") as f:
-            return json.load(f)
-    except Exception:
-        # Log error, return defaults
-        return {"fan_speed": 80, "fan_enabled": True}
-
-def save_config(config):
-    tmp_path = CONFIG_PATH + ".tmp"
-    with open(tmp_path, "w") as f:
-        json.dump(config, f)
-    os.rename(tmp_path, CONFIG_PATH)
-```
-
-## Migration Plan
-
-- **New code:** All new modules/applications must follow this pattern.
-- **Retrofit:** Older code using Pico flash or hardcoded config will be updated to use SD card JSON config as time allows.
-
-## Rationale
-
-- **Reliability:** SD card file system is robust and power-failure tolerant.
-- **Transparency:** Researchers can inspect and edit config files externally if needed.
-- **Consistency:** Standardized mechanism improves maintainability and onboarding.
-
 ## See Also
 
-- [WicdPico Documentation](https://github.com/saladmachine/wicdpico)
-- [Module Implementation Examples](/darkbox_modules/)
-- [Phase 1/2 Main Application Code](/phase1/code_phase1.py, /phase2/code_phase2.py)
+- [README.md](./README.md)
+- [CLAUDE.md](./CLAUDE.md)
+- [context.md](./context.md)
