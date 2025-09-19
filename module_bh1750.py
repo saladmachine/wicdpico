@@ -1,6 +1,6 @@
 # SPDX-FileCopyrightText: 2025
 # SPDX-License-Identifier: MIT
-
+ 
 """
 `bh1750_module`
 ====================================================
