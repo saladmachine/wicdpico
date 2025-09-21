@@ -1,7 +1,7 @@
 """
-WicdPico CPU Fan Module - Final Version
-A stable, UI-controlled fan module using a single PWM initialization
-and the countio library for RPM feedback. Includes responsive UI elements.
+WicdPico CPU Fan Module - Final Version (Corrected RPM v2)
+A stable, UI-controlled fan module using a non-blocking, time-delta
+and count-delta approach for accurate RPM measurement.
 """
 
 from module_base import WicdpicoModule
@@ -16,6 +16,7 @@ import countio
 FAN_PWM_PIN = board.GP15
 FAN_TACHOMETER_PIN = board.GP17
 PULSES_PER_REVOLUTION = 2
+RPM_UPDATE_INTERVAL_S = 2.0 # How often to calculate RPM (in seconds)
 
 class CpuFanModule(WicdpicoModule):
     def __init__(self, foundation):
@@ -25,37 +26,48 @@ class CpuFanModule(WicdpicoModule):
         # --- State Variables ---
         self._fan_speed_percent = 100
         self._fan_rpm = 0
-        self._last_rpm_update = 0
         self._last_action = "Initialized"
 
-        # --- Stable Hardware Initialization (Initialize ONCE) ---
+        # --- Hardware and RPM Timing Initialization ---
         self._fan_pwm = pwmio.PWMOut(FAN_PWM_PIN, frequency=25000)
         self._tachometer = countio.Counter(FAN_TACHOMETER_PIN)
+        
+        # -- NEW: Initialize variables for delta measurement --
+        self._last_rpm_update_time = time.monotonic()
+        self._last_tachometer_count = self._tachometer.count 
+        
         self.set_fan_speed(self._fan_speed_percent) # Start the fan
-        print("✓ CPU Fan module initialized.")
+        print("✓ CPU Fan module initialized with corrected delta RPM logic.")
 
     def set_fan_speed(self, percent):
         """Sets the fan speed by adjusting the PWM duty cycle."""
         self._fan_speed_percent = max(0, min(100, int(percent)))
         self._fan_pwm.duty_cycle = int(self._fan_speed_percent / 100 * 65535)
         self._last_action = f"Speed set to {self._fan_speed_percent}%"
-        print(f"SERIAL DEBUG: Speed set to {self._fan_speed_percent}%")
 
     def update(self):
-        """The 'daemon' method, called continuously to measure RPM."""
+        # --- REVISED NON-BLOCKING DELTA RPM LOGIC ---
         now = time.monotonic()
-        if now - self._last_rpm_update > 2: # Update RPM every 2 seconds
-            self._last_rpm_update = now
-            
-            # Use the delta method for stable RPM measurement
-            start_count = self._tachometer.count
-            time.sleep(0.5)
-            end_count = self._tachometer.count
-            
-            pulses = end_count - start_count
-            pulses_per_second = pulses / 0.5
-            self._fan_rpm = int((pulses_per_second / PULSES_PER_REVOLUTION) * 60)
+        time_delta = now - self._last_rpm_update_time
 
+        if time_delta >= RPM_UPDATE_INTERVAL_S:
+            # Get the current total pulse count
+            current_count = self._tachometer.count
+            
+            # Calculate the number of pulses since the last check
+            count_delta = current_count - self._last_tachometer_count
+            
+            # Calculate RPM based on the change in time and count
+            pulses_per_second = count_delta / time_delta
+            revolutions_per_second = pulses_per_second / PULSES_PER_REVOLUTION
+            self._fan_rpm = int(revolutions_per_second * 60)
+            
+            # Store the current time and count for the next delta calculation
+            self._last_rpm_update_time = now
+            self._last_tachometer_count = current_count
+            # --- END OF REVISED LOGIC ---
+
+    # The register_routes() and get_dashboard_html() methods remain unchanged.
     def register_routes(self, server):
         """Registers all the web server API endpoints for this module."""
         @server.route("/cpu_fan/status", methods=["GET"])
@@ -88,6 +100,7 @@ class CpuFanModule(WicdpicoModule):
 
     def get_dashboard_html(self):
         """Returns the HTML and JavaScript for the control dashboard."""
+        # The HTML and JavaScript portion remains unchanged.
         return f"""
 <div class="card cpu-fan-card">
   <h2 class="card-title">CPU Fan Controller</h2>

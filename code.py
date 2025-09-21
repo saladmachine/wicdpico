@@ -1,10 +1,11 @@
-# code.py - New Module Order (SCD41 First)
+# code.py - New Module Order with CPU Fan
 import supervisor
 import gc
 from foundation_core import WicdpicoFoundation
 from module_led_control import LEDControlModule
 from module_bh1750 import BH1750Module
 from module_scd41 import SCD41Module
+from module_cpu_fan import CpuFanModule # <-- NEW: Import the fan module
 
 supervisor.runtime.autoreload = False
 print("--- System Integration Test ---")
@@ -39,10 +40,15 @@ try:
     foundation.register_module("bh1750", bh1750_module)
     print(f"Memory after BH1750 module: {gc.mem_free()} bytes")
     
-    # 3. LED Module (will appear last)
+    # 3. LED Module (will appear third)
     led_module = LEDControlModule(foundation)
     foundation.register_module("led", led_module)
     print(f"Memory after LED module: {gc.mem_free()} bytes")
+    
+    # 4. CPU Fan Module (will appear last) # <-- NEW
+    cpu_fan_module = CpuFanModule(foundation) # <-- NEW: Instantiate the module
+    foundation.register_module("cpu_fan", cpu_fan_module) # <-- NEW: Register it
+    print(f"Memory after CPU Fan module: {gc.mem_free()} bytes") # <-- NEW: Memory check
 
 
     print("\n✓ SUCCESS: All modules loaded without crashing.")
