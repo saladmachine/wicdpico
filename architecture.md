@@ -1,183 +1,116 @@
-# WicdPico System Architecture
+WicdPico System Architecture
+Overview
+WicdPico is a modular sensor and control platform for the Raspberry Pi Pico 2 W, built with CircuitPython. It provides a standalone WiFi hotspot and a web-based dashboard for real-time monitoring, control, and data logging.
 
-## Overview
+CircuitPython Compatibility Statement
+All server-side code for the dashboard is written in CircuitPython. It is required that any Python code or module used in this project be first verified as available and compatible with CircuitPython. Do not use features, modules, or libraries that are not supported by CircuitPython firmware.
 
-WicdPico is a modular sensor and control platform for the Raspberry Pi Pico 2 W, built with CircuitPython.  
-It provides a standalone WiFi hotspot and a web-based dashboard for real-time monitoring, control, and data logging.
+Core Components
+foundation_core.py: Core system for WiFi/network, web server, module registration, and settings loading.
 
----
+module_base.py: Abstract base class defining the interface for all modules (sensor and system modules).
 
-## Core Components
+module_*.py: Pluggable sensor, peripheral, and system modules.
 
-- **foundation_core.py**: Core system for WiFi/network, web server, module registration, and settings loading.
-- **module_base.py**: Abstract base class defining the interface for all modules (sensor and system modules).
-- **module_*.py**: Pluggable sensor, peripheral, and system modules (see below).
-- **system_*.py**: System/application entrypoints—compose, orchestrate, and integrate multiple modules into a working application. (See below for details.)
-- **code_*.py**: Legacy or test harness entrypoints. May still be used for single-module or experimental setups.
-- **settings.toml**: Configuration file, preferred over legacy config.py.
+system_*.py: System/application entrypoints that compose and orchestrate multiple modules.
 
----
+code_*.py: Test harness and example entrypoints for single-module validation.
 
-## File & Naming Conventions
+settings.toml: Configuration file for all system and module settings.
 
-### Modules
+File & Naming Conventions
+Modules
+All hardware drivers, sensor logic, and system controls are implemented as module_<name>.py.
 
-- All hardware drivers, sensor logic, and system controls are implemented as `module_<name>.py`.
-- Each module inherits from `WicdpicoModule` and is registered with the foundation in a system or code file.
-- Common modules include:
-  - `module_sht45.py`: SHT45 temperature/humidity sensor
-  - `module_scd41.py`: SCD41 CO₂/temperature/humidity sensor
-  - `module_bh1750.py`: BH1750 light sensor
-  - `module_led_control.py`: Onboard LED control
-  - `module_rtc_control.py`: PCF8523 RTC
-  - `module_sd_card.py`: SD card storage
-  - `module_battery_monitor.py`: Battery/VSYS monitoring
-  - `module_monitor.py`: In-system monitor & console
-  - (and others as needed for hardware or features)
+Each module inherits from WicdpicoModule and is registered with the foundation in a system or code file.
 
-### System Files
+System Files
+system_<name>.py:
 
-- **`system_<name>.py`**:  
-  - Application/system entrypoints that compose and orchestrate multiple modules into a complete working device or research platform.
-  - Responsible for:
-    - Instantiating `WicdpicoFoundation`
-    - Registering and configuring modules
-    - Setting up all web routes, including the main dashboard
-    - Managing the application main loop (polling server, calling `.update()` on modules, handling system-level events)
-    - Loading configuration from `settings.toml`
-  - Examples:
-    - `system_darkbox.py`: Full DarkBox application integrating CO₂, light, RTC, SD, and other modules
-    - `system_hydroponic.py`, etc.
-  - The `system_*.py` convention formalizes the role of these files as multi-module, production-ready, application orchestrators.
-  - For deployment, either copy `system_<name>.py` to `code.py` or configure the development workflow to launch the desired system file directly (if supported by the firmware).
+Application/system entrypoints that compose and orchestrate multiple modules into a complete working device.
 
-### Application and Test Harnesses
+They are responsible for instantiating WicdpicoFoundation, registering modules, setting up web routes, and managing the application main loop.
 
-- **`code_*.py`**:  
-  - Legacy, experimental, or test entrypoints.
-  - Typically used for single-module validation, development, or prototyping.
-  - Follow the same structure as system files, but usually only instantiate and register one module.
-  - Still supported for rapid development and hardware bring-up.
+For deployment, the desired system_<name>.py file (e.g., system_darkbox.py) is copied or renamed to code.py, which is the file executed by CircuitPython on boot. This design allows the platform to support multiple applications by simply swapping the system file.
 
-- **`code.py`**:  
-  - The file actually executed on boot by CircuitPython.
-  - In practice, this will be a copy of the desired `system_*.py` or `code_*.py` application.
+Test Harnesses and Examples
+code_*.py:
 
-### Example Structure
+These files are used exclusively for single-module validation, development, or as simple usage examples. They are not intended for final deployment.
 
-```
-/CIRCUITPY/
-├── foundation_core.py
-├── foundation_templates.py
-├── module_base.py
-├── module_sht45.py
-├── module_scd41.py
-├── module_bh1750.py
-├── module_led_control.py
-├── module_rtc_control.py
-├── module_sd_card.py
-├── module_battery_monitor.py
-├── module_monitor.py
-├── system_darkbox.py
-├── system_hydroponic.py
-├── code_sht45.py
-├── code_scd41.py
-├── code_bh1750.py
-├── code_darkbox.py
-├── code_cpu_fan.py
-├── code_monitor.py
-├── settings.toml
-└── code.py           # The active app (copy of one of system_*.py or code_*.py)
-```
+They follow the same basic structure as system files but are stripped down to focus on a single piece of hardware.
 
----
+code.py
+The file actually executed on boot by CircuitPython. In practice, this will be a copy of the desired system_*.py application file.
 
-## System Initialization & Workflow
+Module and System Composition Principle
+Each module (module_*.py) must encapsulate a single hardware device or a single logical function. Modules should not combine multiple unrelated devices.
 
-1. **Select Application/System**:  
-   Copy the desired `system_*.py` or `code_*.py` to `code.py`.
+System files (system_*.py) are responsible for composing and orchestrating multiple modules to deliver the complete application logic and dashboard.
 
-2. **Startup**:  
-   On boot, `code.py`:
-   - Instantiates `WicdpicoFoundation`
-   - Loads configuration from `settings.toml`
-   - Initializes WiFi (AP or Client mode)
-   - Registers modules and their HTTP/web routes
-   - Starts the web server and enters the main loop
+This ensures high modularity, reusability, and clarity. "Fat" modules that combine multiple sensors are discouraged and should be replaced with individual modules for each device.
+System Initialization & Workflow
+Select Application: Copy the desired system_*.py to code.py.
 
-3. **Module Pattern**:  
-   All modules:
-   - Inherit from `WicdpicoModule`
-   - Implement `register_routes(server)`, `get_dashboard_html()`, `update()`, and other lifecycle methods
-   - Are registered with the foundation and exposed on the dashboard
+Startup: On boot, code.py instantiates WicdpicoFoundation, loads configuration, initializes WiFi, registers modules, starts the web server, and enters the main loop.
 
-4. **System File Pattern**:  
-   - System files (`system_*.py`) define the device or application's top-level logic and integration.
-   - They enable clear distinction between reusable modules and composed, production-grade systems.
+Main Loop: The main loop polls the HTTP server and calls .update() on each registered module for periodic tasks.
 
-5. **Dashboard**:  
-   - The dashboard web route (usually `/`) is registered in the system or application file and renders all registered modules using the foundation's template and layout system.
+Shared Resource Management
+To prevent hardware resource conflicts, all shared communication buses (I2C, SPI) MUST be instantiated a single time within the WicdpicoFoundation class. The application (system_*.py) will then pass the shared bus object to each module that requires it during its initialization.
 
-6. **Main Loop**:  
-   - The main loop polls the HTTP server and calls `.update()` on each module for periodic work.
+Example in system_darkbox.py:
 
----
+Python
 
-## Configuration & Extensibility
+# 1. Foundation creates the one and only I2C bus
+foundation = WicdpicoFoundation()
+i2c_bus = foundation.get_i2c_bus() # Or it could be a public property
 
-- **settings.toml** is the canonical place for user and module config (network, sensor options, etc.)
-- Each module may define its own config block/section in `settings.toml`.
-- Legacy `config.py` is supported as fallback.
-- New modules should be added as `module_<name>.py` and registered in a custom `system_*.py` or `code_*.py` application template.
+# 2. Pass the shared bus to each module's constructor
+sht45_module = module_sht45.SHT45Module(i2c_bus)
+scd41_module = module_scd41.SCD41Module(i2c_bus)
 
----
+# 3. Register the modules
+foundation.register_module(sht45_module)
+foundation.register_module(scd41_module)
+This pattern ensures that all modules coordinate access to the I2C bus through a single, shared instance.
 
-## Hardware Patterns
+Configuration & Dependency Management
+Configuration
+settings.toml is the canonical place for user and module config (network, sensor options, etc.). Each module may define its own config block/section in settings.toml.
 
-- **I2C Bus**: GP4 (SDA), GP5 (SCL) for sensors (unless otherwise noted)
-- **SD Card**: SPI interface, mounted at `/sd`
-- **LED**: Onboard LED (GPIO25)
-- **RTC**: PCF8523 via I2C
-- **Power**: USB or battery (VSYS monitored by battery module)
+Dependency Management
+All third-party CircuitPython libraries (e.g., from the Adafruit bundle) must be placed in the /lib directory on the CIRCUITPY drive. This project uses circup for managing and updating these dependencies. A requirements.txt file should be maintained at the root of the project to simplify setup using circup install -r requirements.txt.
 
----
+Embedded & CircuitPython Coding Principles
+Separation of Concerns: Modules encapsulate device-level functionality; system files manage integration and orchestration.
 
-## Best Practices
+Composability: Systems are composed from well-defined, reusable modules.
 
-- Use `code_*.py` files for module development and testing.
-- Use `system_*.py` for integrated, production-ready systems.
-- Compose multi-module systems by copying and extending `system_*.py` templates.
-- Keep modules in the root directory for reliable imports in CircuitPython.
-- Register all module web routes and ensure each module supplies a dashboard HTML snippet or API.
-- Prefer simple, direct hardware interaction and avoid unnecessary abstraction for reliability.
+Testability: Modules can be tested in isolation using code_*.py test harnesses.
 
----
+Resilience & Graceful Failure: Each hardware module is responsible for its own error handling (e.g., using try...except). If a device fails, the module should return a default value (e.g., None) and update its UI to show an error, ensuring that the failure of one sensor does not crash the entire system.
 
-## Embedded & CircuitPython Coding Principles
+Clarity: The naming convention (module_*.py, system_*.py) communicates intent and structure.
 
-- **Separation of Concerns**:  
-  Modules encapsulate device-level or logical functionality; system files manage integration and orchestration.
-- **Composability & Scalability**:  
-  Systems are composed from well-defined, reusable modules.
-- **Testability**:  
-  Modules can be tested in isolation; systems can be tested at the integration level.
-- **Clarity**:  
-  The naming convention (`module_*.py`, `system_*.py`, `code_*.py`) communicates intent and structure.
-- **Resource Awareness**:  
-  Structure does not impact RAM/ROM or firmware constraints—it's a filename and workflow convention.
-- **CircuitPython Alignment**:  
-  `code.py` remains the executed entrypoint, with a workflow supporting templated, version-controlled applications.
+Web Dashboard Architecture: Cards and Buttons
+The dashboard UI is composed of modular "cards," each rendered as a <div class="module">...</div> block. Each card represents a module and is generated by a get_dashboard_html() method in that module's Python code.
 
----
+Responsive Design
+The dashboard uses a .dashboard-wrapper container and CSS media queries to ensure a responsive layout that works well on both desktop and mobile screens.
 
-## License
+Buttons
+All action buttons use the <button> element and are styled globally via CSS to be full width (100%) and stacked vertically for a clear, touch-friendly interface on all devices.
 
+Best Practices
+Use code_*.py files for module development and testing.
+
+Use system_*.py for integrated, production-ready systems.
+
+Keep modules in the root directory for reliable imports in CircuitPython.
+
+Prefer simple, direct hardware interaction and avoid unnecessary abstraction for reliability.
+
+License
 MIT License
-
----
-
-## See Also
-
-- [README.md](./README.md)
-- [CLAUDE.md](./CLAUDE.md)
-- [context.md](./context.md)

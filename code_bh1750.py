@@ -1,71 +1,54 @@
-# code_bh1750.py - BH1750 Light Sensor Test Version
-"""
-Test BH1750 Digital Light Sensor with working dashboard
-"""
+# code_bh1750.py - Test harness for the simplified BH1750 module
 import gc
 import time
-import wifi
-
 import supervisor
+import board
+import busio
+
 supervisor.runtime.autoreload = False
 
 def main():
     try:
-        print("=== WICDPICO BH1750 LIGHT SENSOR TEST ===")
+        print("=== WICDPICO BH1750 LIGHT SENSOR TEST (Simplified) ===")
         
         from foundation_core import WicdpicoFoundation
         foundation = WicdpicoFoundation()
         
+        # In a real system, the foundation would manage the I2C bus.
+        # For this test, we create it here as the architecture specifies.
+        i2c_bus = busio.I2C(board.GP5, board.GP4)
+        print("✓ Shared I2C bus created.")
+        
         if foundation.initialize_network():
-            server_ip = "192.168.4.1" if foundation.wifi_mode == "AP" else str(wifi.radio.ipv4_address)
+            # --- Module Loading ---
             
-            # Load modules FIRST
+            # Load the simplified BH1750 module
             from module_bh1750 import BH1750Module
-            bh1750 = BH1750Module(foundation)
+            bh1750 = BH1750Module(foundation, i2c_bus)
             foundation.register_module("bh1750", bh1750)
             
-            
+            # Load other modules (e.g., LED control)
             from module_led_control import LEDControlModule
             led = LEDControlModule(foundation)
             foundation.register_module("led", led)
             
-            # Fix foundation dashboard route
-            from adafruit_httpserver import Response
-            
-            @foundation.server.route("/", methods=['GET'])
-            def serve_dashboard(request):
-                try:
-                    dashboard_html = foundation.render_dashboard("WicdPico BH1750 Light Sensor Test")
-                    return Response(request, dashboard_html, content_type="text/html")
-                except Exception as e:
-                    print(f"Dashboard error: {e}")
-                    return Response(request, f"<h1>Dashboard Error</h1><p>{e}</p>", content_type="text/html")
-            
+            # --- Web Server Setup ---
             foundation.start_server()
-            
-            print(f"✓ Dashboard ready at: http://{server_ip}")
-            print("✓ BH1750 light sensor module loaded!")
-            print("✓ Check dashboard for sensor status")
+            print(f"✓ Dashboard ready at: http://{foundation.server_ip}")
             
             # Main loop
             while True:
-                foundation.server.poll()
-                for module in foundation.modules.values():
-                    module.update()
+                foundation.poll()  # This now handles server polling and module updates
                 time.sleep(0.1)
-                gc.collect()
                 
-        else:
-            print("✗ Network failed")
-            
-    except KeyboardInterrupt:
-        print("Stopping...")
     except Exception as e:
-        print(f"✗ Error: {e}")
+        print(f"✗ A critical error occurred: {e}")
         import sys
         sys.print_exception(e)
+        print("Rebooting in 15 seconds...")
+        time.sleep(15)
+        supervisor.reload()
 
+# Standard entry point
 if __name__ == "__main__":
-    main()
-else:
     main()

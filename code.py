@@ -1,58 +1,59 @@
-# SPDX-FileCopyrightText: 2025
-# SPDX-License-Identifier: MIT
-#
-# code_cpu_fan.py
-"""
-WicdPico CPU Fan Controller Application Entrypoint
-
-Minimal entrypoint for the CPU Fan module, following WicdPico conventions.
-Sets up the foundation, registers the module, and starts the HTTP server and polling loop.
-"""
-
-import time
+# code.py - New Module Order (SCD41 First)
+import supervisor
+import gc
 from foundation_core import WicdpicoFoundation
-from module_cpu_fan import CpuFanModule
+from module_led_control import LEDControlModule
+from module_bh1750 import BH1750Module
+from module_scd41 import SCD41Module
 
-def main():
-    """
-    Main entrypoint for the WicdPico CPU Fan Controller application.
-    Initializes the foundation, registers the CPU fan module, and starts the server.
-    """
-    print("=== WicdPico CPU Fan Controller ===")
-    print("Initializing foundation...")
+supervisor.runtime.autoreload = False
+print("--- System Integration Test ---")
+print(f"Initial free memory: {gc.mem_free()} bytes")
+
+try:
+    # 1. Initialize Foundation (which creates the I2C bus)
     foundation = WicdpicoFoundation()
+    print(f"Memory after foundation: {gc.mem_free()} bytes")
 
-    if foundation.initialize_network():  # <-- Add this check
-        print("Loading CPU Fan module...")
-        cpu_fan_module = CpuFanModule(foundation)
-        foundation.register_module("cpu_fan", cpu_fan_module)
+    # Exit if I2C bus failed to initialize
+    if not foundation.i2c:
+        raise RuntimeError("Could not initialize I2C bus. Halting.")
 
-        print("Starting HTTP server...")
-        foundation.start_server()  # <-- Start the server first!
+    # 2. Initialize the network to create the server object FIRST
+    print("Initializing network and server...")
+    network_ok = foundation.initialize_network()
+    if not network_ok:
+        raise RuntimeError("Failed to initialize network. Halting.")
+    print("Network initialized.")
 
-        print("foundation.server =", foundation.server)
-        assert foundation.server is not None, "foundation.server is None! Cannot register routes."
-        print("Registering module routes...")
-        cpu_fan_module.register_routes(foundation.server)
+    # 3. NOW, initialize and register the modules in the desired order
+    print("Loading modules...")
 
-        @foundation.server.route("/", methods=['GET'])
-        def serve_dashboard(request):
-            """
-            Serve the main dashboard page.
-            """
-            html = foundation.render_dashboard()
-            return foundation.html_response(request, html)
+    # 1. SCD41 Module (will appear first on dashboard)
+    scd41_module = SCD41Module(foundation, foundation.i2c)
+    foundation.register_module("scd41", scd41_module)
+    print(f"Memory after SCD41 module: {gc.mem_free()} bytes")
 
-        print("Entering main polling loop. Press Ctrl+C to exit.")
-        try:
-            while True:
-                for module in foundation.modules.values():
-                    module.update()
-                time.sleep(0.1)
-        except KeyboardInterrupt:
-            print("Shutting down.")
-    else:
-        print("Network initialization failed.")
+    # 2. BH1750 Module (will appear second)
+    bh1750_module = BH1750Module(foundation, foundation.i2c)
+    foundation.register_module("bh1750", bh1750_module)
+    print(f"Memory after BH1750 module: {gc.mem_free()} bytes")
+    
+    # 3. LED Module (will appear last)
+    led_module = LEDControlModule(foundation)
+    foundation.register_module("led", led_module)
+    print(f"Memory after LED module: {gc.mem_free()} bytes")
 
-if __name__ == "__main__":
-    main()
+
+    print("\n✓ SUCCESS: All modules loaded without crashing.")
+
+    # 4. Start the server and run the main application loop
+    foundation.start_server()
+    foundation.run_main_loop()
+
+except Exception as e:
+    print("\n✗ FAILED: A critical error occurred.")
+    import sys
+    sys.print_exception(e)
+
+print("--- Test Complete ---")
