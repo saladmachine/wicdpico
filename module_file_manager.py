@@ -50,11 +50,13 @@ class FileManagerModule(WicdpicoModule):
             except OSError:
                 pass
 
-        if files:
-            file_list = "\n".join(files)
-            response_body = f"Files found:\n\n{file_list}"
-        else:
-            response_body = "No files found in CIRCUITPY root directory."
+            if files:
+                file_list = "\n".join(files)
+                response_body = f"Files found:\n\n{file_list}"
+            else:
+                response_body = "No files found in CIRCUITPY root directory."
+        except Exception as e:
+            response_body = f"Error listing files: {str(e)}"
         return Response(request, response_body, content_type="text/plain")
 
     def select_file(self, request):
