@@ -1,0 +1,15 @@
+# WicdPico Standalone Sensor Meter Configuration
+# Dedicated AP mode for I2C sensor monitoring
+
+# WiFi Access Point Configuration
+WIFI_SSID = "PicoTest-Node00"
+WIFI_PASSWORD = "testpass123"
+WIFI_MODE = "AP"
+
+# System Configuration
+BLINK_INTERVAL = "0.5"
+
+WIFI_AP_TIMEOUT_MINUTES = "15"
+TIMEZONE_OFFSET_HOURS = "-4"
+
+WICDPICO_VERSION = "1.02"
