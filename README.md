@@ -4,34 +4,37 @@
 
 ## Overview
 
-WicdPico is a modular platform for building I2C sensor instruments that serve interactive web dashboards. Suitable for environmental monitoring, data logging, and laboratory instrumentation - all as simple as swapping or stacking modules.
+WicdPico is a modular platform for building I2C sensor instruments that serve interactive web dashboards. Suitable for environmental monitoring, data logging, and laboratory instrumentation—all accessible with a browser.
 
 ## Key Features
 
-✅ **Standalone Operation** - Creates its own WiFi hotspot (no network required)  
-✅ **Web-Based Dashboard** - Control via phone, tablet, or laptop browser  
-✅ **Modular Architecture** - Mix and match sensor/control modules  
-✅ **Built-in Web IDE** - Edit code directly through web interface  
-✅ **Data Logging** - Timestamped data to SD card  
-✅ **RTC Time Sync** - Browser-based time synchronization for accurate timestamps  
-✅ **I2C Sensor Support** - Temperature, humidity, CO2, light sensors  
+✅ **Standalone Operation** — Creates its own WiFi hotspot (no network required)  
+✅ **Web-Based Dashboard** — Control via phone, tablet, or laptop browser  
+✅ **Modular Architecture** — Mix and match sensor/control modules  
+✅ **Built-in Web IDE** — Edit code directly through web interface  
+✅ **Data Logging** — Timestamped data to SD card  
+✅ **RTC Time Sync** — Browser-based time synchronization for accurate timestamps  
+✅ **I2C Sensor Support** — Temperature, humidity, CO2, light sensors  
+✅ **Scripted Deployment** — Easy install using deployment scripts
 
 ## Quick Start
 
 1. **Flash CircuitPython 9.0+** to your Pico 2 W
-2. **Copy files** to CIRCUITPY drive:
+2. **Clone and deploy:**
     ```bash
     git clone https://github.com/saladmachine/wicdpico.git
-    cp wicdpico/*.py /media/CIRCUITPY/
-    cp wicdpico/settings.toml /media/CIRCUITPY/
+    cd wicdpico
+    ./scripts/deploy.sh
     ```
-3. **Connect to WiFi** hotspot "PicoTest-Node00" (password: testpass123)
+    This script copies the latest code and libraries directly to your CIRCUITPY drive.
+3. **Connect to WiFi** hotspot (e.g., "PicoTest-Node00", password: testpass123)
 4. **Open browser** to http://192.168.4.1
 5. **View dashboard** with live sensor data and controls
 
 ## Modular System
 
 ### Available Modules
+
 - **`module_sht45.py`** - Temperature/humidity sensor (SHT45)
 - **`module_scd41.py`** - CO2, temperature, humidity sensor (SCD41)
 - **`module_bh1750.py`** - Digital light sensor (BH1750)
@@ -70,7 +73,7 @@ cp code_rtc_time_sync_test.py code.py
 cp code_sd_card_test.py code.py
 ```
 
-**2. Multi-Module Combinations** 
+**2. Multi-Module Combinations**
 ```bash
 # Create custom code.py with desired modules
 # See existing code_*.py files for examples
@@ -84,7 +87,7 @@ cp code_sd_card_test.py code.py
 
 ## Creating a Custom Application and Module
 
-You can create your own specialized sensor application by combining existing modules or developing your own. Here’s a step-by-step guide for a semi-skilled programmer to get started **without needing any external code or templates**:
+You can create your own specialized sensor application by combining existing modules or developing your own. Here’s a step-by-step guide for a semi-skilled programmer to get started **without needing any external templates**:
 
 ---
 
@@ -195,11 +198,19 @@ if foundation.initialize_network():
 wicdpico/
 ├── code.py                      # ← Main application (copy target)
 ├── foundation_core.py           # Core framework
-├── module_base.py              # Module base class
-├── settings.toml               # Configuration
-├── module_*.py                 # All sensor/control modules
-├── code_*.py                   # Example configurations
-└── claude_context.txt          # Development context and guidelines
+├── module_base.py               # Module base class
+├── settings.toml                # Configuration
+├── module_*.py                  # All sensor/control modules
+├── code_*.py                    # Example configurations
+├── lib/                         # CircuitPython driver libraries
+│   └── adafruit_SHT4x.py        # Example: Sensirion SHT4x sensor driver
+├── scripts/
+│   └── deploy.sh                # Automated deployment to CIRCUITPY
+├── tests/                       # Test scripts for modules/hardware
+│   └── test_led_blinky.py
+├── Documents/                   # System, module, and interaction diagrams
+│   └── *.svg, *.png
+└── claude_context.txt           # Development context and guidelines
 ```
 
 ## Hardware Compatibility
@@ -215,6 +226,12 @@ wicdpico/
 - **I2C**: GP4 (SDA), GP5 (SCL)
 - **SD Card**: SPI interface
 - **Power**: USB or battery via STEMMA connector
+
+## Deployment
+
+1. Plug in your Pico 2 W (CIRCUITPY drive should appear).
+2. Run `./scripts/deploy.sh` from your local `wicdpico` repo to copy all code and libraries.
+3. Reboot the Pico and connect to the device's WiFi SSID.
 
 ## Contributing
 
@@ -232,6 +249,11 @@ MIT License
 ---
 
 ## Acknowledgments
+
 Built with CircuitPython and adafruit_httpserver.
 
-AI Assistance Note: This project, including aspects of its code (e.g., structure, debugging assistance, error handling enhancements) and the drafting of this README.md, was significantly assisted by AI tools (Anthropic Claude, GitHub Copilot, ChatGPT). All code and text should be reviewed for accuracy and safety before use in production.
+**AI Assistance Note:** This project, including aspects of its code (e.g., structure, debugging assistance, error handling enhancements) and the drafting of this README.md, was significantly assisted by AI tools (Anthropic Claude, GitHub Copilot, ChatGPT). All code and text should be reviewed for accuracy and safety before use in production.
+
+---
+
+**With these instructions, you do NOT need to reference any external code or templates. Everything you need to create a custom application and module is demonstrated above.**
