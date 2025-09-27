@@ -4,18 +4,17 @@
 
 ## Overview
 
-WicdPico is a modular platform for building I2C sensor instruments that serve interactive web dashboards. Suitable for environmental monitoring, data logging, and laboratory instrumentation—all accessible with a browser.
+WicdPico is a modular platform for building I2C, SPI, and GPIO sensor and actuator instrumentation and control devices that serve interactive web dashboards. Suitable for environmental monitoring, data logging, and laboratory instrumentation, all accessible with a browser.
 
 ## Key Features
 
-✅ **Standalone Operation** — Creates its own WiFi hotspot (no network required)  
-✅ **Web-Based Dashboard** — Control via phone, tablet, or laptop browser  
-✅ **Modular Architecture** — Mix and match sensor/control modules  
-✅ **Built-in Web IDE** — Edit code directly through web interface  
-✅ **Data Logging** — Timestamped data to SD card  
-✅ **RTC Time Sync** — Browser-based time synchronization for accurate timestamps  
-✅ **I2C Sensor Support** — Temperature, humidity, CO2, light sensors  
-✅ **Scripted Deployment** — Easy install using deployment scripts
+**Standalone Operation** — Creates its own WiFi hotspot (no network required)  
+**Web-Based Dashboard** — Control via phone, tablet, or laptop browser  
+**Modular Architecture** — Mix and match sensor/control modules  
+**Built-in Web IDE** — Edit code directly through web interface  
+**Data Logging** — Timestamped data to SD card  
+**RTC Time Sync** — Browser-based time synchronization for accurate timestamps  
+**I2C Sensor Support** — Temperature, humidity, CO2, light sensors  
 
 ## Quick Start
 
@@ -35,9 +34,10 @@ WicdPico is a modular platform for building I2C sensor instruments that serve in
 
 ### Available Modules
 
-- **`module_sht45.py`** - Temperature/humidity sensor (SHT45)
-- **`module_scd41.py`** - CO2, temperature, humidity sensor (SCD41)
-- **`module_bh1750.py`** - Digital light sensor (BH1750)
+- **`module_sht45.py`** - Temperature/humidity sensor
+- **`module_scd41.py`** - CO2, temperature, humidity sensor
+- **`module_bh1750.py`** - Digital light sensor
+- ** `module_em2101`** - Fan control  
 - **`module_led_control.py`** - Onboard LED control and status
 - **`module_rtc_control.py`** - Real-time clock (PCF8523) with browser time sync
 - **`module_sd_card.py`** - SD card data logging
