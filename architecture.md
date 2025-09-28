@@ -1,5 +1,5 @@
 WicdPico System Architecture
-This file should be read by collaborating AI before working on the repo.
+This file should be read by collaborating AI before working on the repo. It is intended for AI and not formatted for easy reading by a human.
 Overview
 WicdPico is a modular sensor and control platform for the Raspberry Pi Pico 2 W, built with CircuitPython. It provides a standalone WiFi hotspot and a web-based dashboard for real-time monitoring, control, and data logging.
 
