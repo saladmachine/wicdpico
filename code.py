@@ -13,7 +13,7 @@ def main():
         # Import all necessary modules
         from module_scd41 import SCD41Module
         from module_bh1750 import BH1750Module
-        # --- CORRECTED IMPORT ---
+        from module_cpu_fan import CpuFanModule
         from module_battery_monitor import BatteryMonitorModule
         from module_rtc import RTCModule
         from module_SD_manager import SDManagerModule
@@ -25,7 +25,9 @@ def main():
         bh1750 = BH1750Module(foundation)
         foundation.register_module("bh1750", bh1750)
 
-        # --- CORRECTED CLASS NAME ---
+        cpu_fan_module = CpuFanModule(foundation)
+        foundation.register_module("cpu_fan", cpu_fan_module)
+        
         battery_monitor = BatteryMonitorModule(foundation)
         foundation.register_module("battery", battery_monitor)
         
@@ -34,7 +36,7 @@ def main():
 
         rtc = RTCModule(foundation)
         foundation.register_module("rtc", rtc)
-                # Instantiate and register all modules
+        
         sd_manager = SDManagerModule(foundation)
         foundation.register_module("sd_manager", sd_manager)
 
