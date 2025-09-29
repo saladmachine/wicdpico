@@ -31,30 +31,17 @@ This script copies the latest code and libraries directly to your CIRCUITPY driv
 
 ## Modular System
 
-### Available Modules
-**`module_sht45.py`** - Temperature/humidity sensor\
-**`module_scd41.py`** - CO2, temperature, humidity sensor\
-**`module_bh1750.py`** - Digital light sensor\
-**`module_emc2101.py`** - Fan control\
-**`module_led_control.py`** - Onboard LED control and status\
-**`module_rtc_control.py`** - Real-time clock (PCF8523) with browser time sync\
-**`module_sd_card.py`** - SD card data logging\
-**`module_sd_card_test.py`** - SD card testing utilities\
-**`module_power_monitor.py`** - Power source monitoring\
-**`module_water_level.py`** - Water level detection (FS-IR02B sensor)\
-**`module_file_manager.py`** - Web-based file editor\
-
-### Test harnesses - for code to test the modules.
-**`code_sht45.py`** - Temperature/humidity sensor\
-**`code_scd41.py`** - CO2, temperature, humidity sensor\
-**`code_bh1750.py`** - Digital light sensor\
-**`code_emc2101.py`** - Fan control\
-**`code_led_control.py`** - Onboard LED control and status\
-**`code_rtc_control.py`** - Real-time clock (PCF8523) with browser time sync\
-**`code_sd_card.py`** - SD card data logging\
-**`code_power_monitor.py`** - Power source monitoring\
-**`code_water_level.py`** - Water level detection (FS-IR02B sensor)\
-**`code_file_manager.py`** - Web-based file editor\
+### Available Modules / Test harnesses
+**`module_sht45.py`**/**`code_sht45.py`** - Temperature/humidity sensor\
+**`module_scd41.py`**/**`code_scd41.py`** - CO2, temperature, humidity sensor\
+**`module_bh1750.py`**/**`code_bh1750.py`** - Digital light sensor\
+**`module_emc2101.py`**/**`code_emc2101.py`** - Fan control\
+**`module_led_control.py`**/**`code_led_control.py`** - Onboard LED control and status\
+**`module_rtc_control.py`**/**`code_rtc_control.py`** - Real-time clock (PCF8523) with browser time sync\
+**`module_sd_card.py`**/**`code_sd_card.py`** - SD card data logging\
+**`module_power_monitor.py`**/**`code_power_monitor.py`** - Power source monitoring\
+**`module_water_level.py`**/**`code_water_level.py`** - Water level detection (FS-IR02B sensor)\
+**`module_file_manager.py`**/**`code_file_manager.py`** - Web-based file editor
 
 ### Multi-module Combinations
 Combine modules into systems
