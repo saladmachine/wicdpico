@@ -1,4 +1,5 @@
 WicdPico System Architecture
+This file should be read by collaborating AI before working on the repo. It is intended for AI and not formatted for easy reading by a human.
 Overview
 WicdPico is a modular sensor and control platform for the Raspberry Pi Pico 2 W, built with CircuitPython. It provides a standalone WiFi hotspot and a web-based dashboard for real-time monitoring, control, and data logging.
 
@@ -64,15 +65,15 @@ Example in system_darkbox.py:
 
 Python
 
-# 1. Foundation creates the one and only I2C bus
+1. Foundation creates the one and only one I2C bus
 foundation = WicdpicoFoundation()
 i2c_bus = foundation.get_i2c_bus() # Or it could be a public property
 
-# 2. Pass the shared bus to each module's constructor
+2. Pass the shared bus to each module's constructor
 sht45_module = module_sht45.SHT45Module(i2c_bus)
 scd41_module = module_scd41.SCD41Module(i2c_bus)
 
-# 3. Register the modules
+3. Register the modules
 foundation.register_module(sht45_module)
 foundation.register_module(scd41_module)
 This pattern ensures that all modules coordinate access to the I2C bus through a single, shared instance.
