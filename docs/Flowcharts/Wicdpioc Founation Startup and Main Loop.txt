@@ -1,0 +1,63 @@
+@startuml
+title Wicdpico Foundation Startup and Main Loop
+
+' Apply a simple, monochrome style
+skinparam monochrome true
+skinparam shadowing false
+
+start
+
+partition "Constructor (__init__)" {
+  :Create Config and TemplateSystem objects;
+  :Initialize internal variables (logs, modules, etc.);
+  if (Initialize I2C Bus?) then (Success)
+    :Log "✓ I2C Bus initialized";
+  else (Failure)
+    :Log "✗ FAILED to initialize I2C bus";
+  endif
+}
+
+partition "Network Setup (initialize_network)" {
+  :Call `load_user_config()`;
+  note right
+    1. Tries to load from `settings.toml`.
+    2. If failed, tries to load from `config.py`.
+    3. If failed, uses emergency defaults and
+       sets `config_failed` flag.
+  endnote
+  :Set WiFi mode to "AP";
+  :Call `safe_start_access_point()`;
+  note right
+    Validates password and uses
+    emergency credentials on failure.
+  endnote
+  :Configure static IP for AP (192.168.4.1);
+  :Initialize HTTP Server object;
+}
+
+:Register all sensor modules;
+note right
+  Each module adds its own HTML and
+  API routes to the central server.
+endnote
+
+partition "Server Start (start_server)" {
+  :Define root route ("/") to render dashboard;
+  :Start server listening on http://192.168.4.1;
+  :Log "Foundation ready";
+}
+
+partition "Main Loop (run_main_loop)" {
+  while (True) is ( )
+    :Call `poll()`;
+    note right
+      - `server.poll()` for incoming HTTP requests.
+      - `module.update()` for all registered modules.
+    endnote
+    :Sleep for 0.1s;
+    :Call `gc.collect()` to free memory;
+  endwhile
+}
+
+stop
+@enduml

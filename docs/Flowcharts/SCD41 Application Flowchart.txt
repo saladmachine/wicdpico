@@ -1,0 +1,56 @@
+@startuml
+title SCD41 Application Flow
+
+' Apply a simple, monochrome style
+skinparam monochrome true
+skinparam shadowing false
+
+start
+
+partition "Application Startup (code_scd41.py)" {
+  :Create WicdpicoFoundation instance;
+  note right
+    Acquires shared I2C bus from foundation.
+  endnote
+  :Call initialize_network();
+}
+
+partition "SCD41 Module Initialization" {
+  :Create SCD41Module instance;
+  if (Initialize SCD41 Sensor via I2C?) then (Success)
+    :Set module status to "Ready";
+    :Read sensor serial number;
+  else (Failure)
+    :Set module status to "Error: Not Found";
+  endif
+}
+
+partition "Module & Server Registration" {
+  :Call foundation.register_module();
+  note right
+    This calls the module's register_routes(),
+    which adds the 'POST /scd41/read' endpoint.
+  endnote
+  :Define custom root ('/') dashboard route;
+  :Call foundation.start_server();
+  :Log "Dashboard ready";
+}
+
+partition "Main Loop & User Interaction" {
+  while (True) is ( )
+    :foundation.poll();
+    note right
+      The poll() method handles all web traffic.
+      A user request to 'GET /' returns the dashboard.
+      A click on the button sends a 'POST /scd41/read'
+      request, which calls the module's
+      get_sensor_reading() function, triggers
+      the sensor, **waits 5 seconds**, and
+      returns the new data.
+    endnote
+    :time.sleep(0.1);
+  endwhile
+}
+
+stop
+@enduml

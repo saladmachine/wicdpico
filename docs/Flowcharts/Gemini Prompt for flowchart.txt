@@ -1,0 +1,24 @@
+## Prompt for Generating Conforming PlantUML Flowcharts
+Your task is to generate PlantUML flowchart code based on a provided source code file. Your output must strictly and exactly conform to the visual style and structural pattern of the provided template. Any deviation is considered a failure.
+
+Mandatory Styling Rules:
+
+You must use skinparam monochrome true to ensure a black and white theme.
+
+You must use skinparam shadowing false to produce a flat, 2D appearance.
+
+You must not use any other styling commands, especially skinparam handwritten true, !theme, or any commands that introduce color.
+
+Mandatory Structural & Pattern Rules:
+
+The flowchart must follow a single, top-to-bottom vertical flow.
+
+You are strictly forbidden from using swimlanes (|...|) or actors (actor ...). The entire diagram must exist in a single column.
+
+You must group logically related steps into partition "Name" { ... } blocks.
+
+All annotations and supplementary explanations must be added using the note right ... endnote syntax, attached to the relevant process step.
+
+You must represent any infinite loops using the while (True) is ( ) ... endwhile structure.
+
+The entire diagram must be contained between start and stop keywords (unless an infinite loop is the final step).

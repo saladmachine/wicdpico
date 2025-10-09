@@ -124,7 +124,7 @@ class SCD41Module(WicdpicoModule):
         }}
         </style>
         <div class="module">
-            <h2>{name}</h2>
+            <h2>CO2 Sensor (SCD41)</h2>
             <div class="status">
                 <strong>Status:</strong> <span style="color: {status_color};">{status_message}</span><br>
                 <strong>Last Reading:</strong> <span id="scd41-last-reading">{last_reading_text}</span>

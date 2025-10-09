@@ -1,0 +1,57 @@
+@startuml
+title Wicdpico System Architecture & Composition
+
+' Apply a simple, monochrome style
+skinparam monochrome true
+skinparam shadowing false
+
+start
+
+partition "Core System (foundation_core.py)" {
+  :The Foundation provides core services;
+  note right
+    - WiFi & Network Management
+    - HTTP Web Server
+    - Module Registration System
+    - Settings Loading
+  endnote
+}
+
+partition "Shared Resource Management" {
+  :Foundation instantiates and owns shared hardware buses;
+  note right
+    This ensures a single, shared I2C bus
+    is used by all components to prevent conflicts,
+    as specified in architecture.md.
+  endnote
+}
+
+partition "Modules (module_*.py)" {
+  :Modules encapsulate a single device or function;
+  :Modules are initialized with shared resources (e.g., I2C bus) from the Foundation;
+  note right
+    Each module must provide a `get_dashboard_html()`
+    method to render its UI card. They register
+    their own API routes with the Foundation's server.
+  endnote
+}
+
+partition "Application (system_*.py)" {
+  :The Application layer composes the final system;
+  :It instantiates the Foundation first;
+  :It then instantiates all required Modules;
+  :Finally, it registers each module with the Foundation;
+  note right
+    This follows the composition principle where
+    `system_*.py` files orchestrate all the
+    lower-level modules into a working device.
+  endnote
+}
+
+partition "Resulting System" {
+  :The composed system runs an infinite loop;
+  :The system serves a web dashboard accessible by a browser;
+}
+
+stop
+@enduml

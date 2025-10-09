@@ -89,15 +89,26 @@ class Emc2101Module(WicdpicoModule):
             </div>
             """.format(version=self.VERSION, last_action=self._last_action)
 
+        # Layout: slider (with label) on one line, each button on its own line, full width, responsive
         return """
         <div class="module">
             <h2>EMC2101 Fan Control {version}</h2>
-            <div class="control-group">
-                <input type="range" min="0" max="100" value="{speed}" id="fan-speed-slider" oninput="updateFanSpeedLabel(this.value)">
-                <span id="fan-speed-label">{speed}%</span>
-                <button onclick="setFanSpeed()">Set Speed</button>
-                <button onclick="turnFanOn()">On</button>
-                <button onclick="turnFanOff()">Off</button>
+            <div class="control-group" style="max-width: 420px;">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <input type="range" min="0" max="100" value="{speed}" id="fan-speed-slider"
+                        oninput="updateFanSpeedLabel(this.value)"
+                        style="flex: 1 1 0px; min-width: 80px; height: 32px;">
+                    <span id="fan-speed-label" style="width: 56px; text-align: center;">{speed}%</span>
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <button onclick="setFanSpeed()" style="width: 100%; height: 32px;">Set Speed</button>
+                </div>
+                <div style="margin-bottom: 8px;">
+                    <button onclick="turnFanOn()" style="width: 100%; height: 32px;">On</button>
+                </div>
+                <div>
+                    <button onclick="turnFanOff()" style="width: 100%; height: 32px;">Off</button>
+                </div>
             </div>
             <p id="fan-status">Last action: {last_action}</p>
         </div>

@@ -11,25 +11,9 @@ def main():
 
     if foundation.initialize_network():
         # Import all necessary modules
-        from module_scd41 import SCD41Module
-        from module_bh1750 import BH1750Module
-        from module_emc2101 import Emc2101Module
-        from module_battery_monitor import BatteryMonitorModule
         from module_rtc import RTCModule
         from module_SD_manager import SDManagerModule
         from module_datalogger import DataloggerModule
-        
-        scd41 = SCD41Module(foundation)
-        foundation.register_module("scd41", scd41)
-
-        bh1750 = BH1750Module(foundation)
-        foundation.register_module("bh1750", bh1750)
-
-        emc2101_module = Emc2101Module(foundation)
-        foundation.register_module("emc2101", emc2101_module)
-
-        battery_monitor = BatteryMonitorModule(foundation)
-        foundation.register_module("battery", battery_monitor)
         
         datalogger = DataloggerModule(foundation)
         foundation.register_module("datalogger", datalogger)

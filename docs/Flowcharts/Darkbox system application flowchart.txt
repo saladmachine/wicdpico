@@ -1,0 +1,50 @@
+@startuml
+title Darkbox System Application Flow
+
+' Apply a simple, monochrome style
+skinparam monochrome true
+skinparam shadowing false
+
+start
+
+partition "Application Startup (system_darkbox.py)" {
+  :Create **WicdpicoFoundation** instance;
+  note right
+    Acquires shared I2C bus from foundation.
+  endnote
+  :Call **initialize_network()**;
+}
+
+partition "Module Initialization & Registration" {
+  :Instantiate and register **SCD41Module**;
+  :Instantiate and register **BH1750Module**;
+  :Instantiate and register **CpuFanModule**;
+  :...(and all other required modules);
+  note right
+    Each module is passed the `foundation` object,
+    giving it access to the shared I2C bus.
+    The registration order determines the
+    display order on the dashboard.
+  endnote
+}
+
+partition "Server Start" {
+  :Call **foundation.start_server()**;
+  :Log "Darkbox dashboard ready";
+}
+
+partition "Main Loop" {
+  while (True) is ( )
+    :foundation.poll();
+    note right
+      The poll() method handles all web traffic,
+      dispatching requests to the appropriate
+      module handlers and rendering the dashboard
+      by collecting HTML from each registered module.
+    endnote
+    :time.sleep(0.1);
+  endwhile
+}
+
+stop
+@enduml
