@@ -1,56 +1,62 @@
-# code_monitor.py (Test Harness)
-# SPDX-FileCopyrightText: 2025
-# SPDX-License-Identifier: MIT
+# system_darkbox.py
 
 import time
-import supervisor
-import sys
+import gc
 
-# Per project convention, disable autoreload for stability in test harnesses
-supervisor.runtime.autoreload = False
+from foundation_core import WicdpicoFoundation
 
 def main():
-    """
-    Initializes the WicdPico foundation, registers the Monitor module,
-    and starts the web server to test the module's functionality in isolation.
-    """
-    try:
-        print("=== WICDPICO MONITOR TEST ===")
+    print("=== WICDPICO DARKBOX SYSTEM v1.0 ===")
+    foundation = WicdpicoFoundation()
+
+    if foundation.initialize_network():
+        # Import all necessary modules
+        from module_scd41 import SCD41Module
+        from module_bh1750 import BH1750Module
+        from module_emc2101 import Emc2101Module
+        from module_battery_monitor import BatteryMonitorModule
+        from module_rtc import RTCModule
+        from module_SD_manager import SDManagerModule
+        from module_datalogger import DataloggerModule
         
-        # 1. Initialize the core application foundation
-        from foundation_core import WicdpicoFoundation
-        foundation = WicdpicoFoundation()
-        print("✓ Foundation core instantiated.")
+        # 1. FOUNDATIONAL SERVICES (Must be first for dependency chain)
+        
+        # A. RTC: Provides time for all logging modules
+        rtc = RTCModule(foundation)
+        foundation.register_module("rtc", rtc)
+        
+        # B. SD Manager: Mounts the file system for all logging modules
+        sd_manager = SDManagerModule(foundation)
+        foundation.register_module("sd_manager", sd_manager)
 
-        # 2. Initialize WiFi and network services
-        if foundation.initialize_network():
-            
-            # 3. Import and instantiate the module to be tested
-            from module_monitor import MonitorModule
-            monitor = MonitorModule(foundation)
+        # 2. CORE SENSOR MODULES (Can be loaded in any order now)
+        
+        scd41 = SCD41Module(foundation)
+        foundation.register_module("scd41", scd41)
 
-            # 4. Register the module. This automatically calls the module's
-            #    register_routes() method, setting up all necessary web endpoints.
-            foundation.register_module("monitor", monitor)
+        bh1750 = BH1750Module(foundation)
+        foundation.register_module("bh1750", bh1750)
 
-            # 5. Start the web server
-            foundation.start_server()
-            
-            # The MonitorModule serves its own full page, so we point to its specific path.
-            print("✓ Monitor ready at: http://{}/monitor".format(foundation.server_ip))
+        # 3. PERIPHERAL & LOGGING MODULES (Rely on RTC/SD for full functionality)
 
-            # 6. Main application loop to keep the server responsive
-            while True:
-                foundation.poll()  # Handle incoming web requests
-                time.sleep(0.1)
-                
-    except Exception as e:
-        # Graceful error handling: print the exception and reboot the device
-        print("✗ A critical error occurred: {}".format(e))
-        sys.print_exception(e)
-        print("Rebooting in 15 seconds...")
-        time.sleep(15)
-        supervisor.reload()
+        emc2101_module = Emc2101Module(foundation)
+        foundation.register_module("emc2101", emc2101_module)
+
+        battery_monitor = BatteryMonitorModule(foundation)
+        foundation.register_module("battery", battery_monitor)
+        
+        datalogger = DataloggerModule(foundation)
+        foundation.register_module("datalogger", datalogger)
+
+        # Start the web server and dashboard route (via foundation)
+        foundation.start_server()
+        print("✓ Darkbox dashboard ready. Access via browser.")
+
+        # Main loop: poll the server
+        while True:
+            foundation.poll()
+            time.sleep(0.1)
+            gc.collect()
 
 if __name__ == "__main__":
     main()

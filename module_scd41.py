@@ -23,6 +23,7 @@ class SCD41Module(WicdpicoModule):
         self.status_message = "Initializing..."
         self.last_error = None
         self._initialize_sensor()
+        # FIX 1: F-string in startup_print converted
         self.foundation.startup_print("SCD41 module created. Status: '{}'".format(self.status_message))
 
     def _initialize_sensor(self):
@@ -34,11 +35,13 @@ class SCD41Module(WicdpicoModule):
         try:
             self.scd41 = adafruit_scd4x.SCD4X(self.i2c)
             serial_num = self.scd41.serial_number
+            # FIX 2: F-string converted
             self.sensor_serial = "{:04X}-{:04X}-{:04X}".format(serial_num[0], serial_num[1], serial_num[2])
             self.sensor_available = True
             self.status_message = "Ready (Single-Shot Mode)"
         except Exception as e:
             self.sensor_available = False
+            # FIX 3: F-string converted
             self.last_error = "SCD41 initialization failed: {}".format(e)
             self.status_message = "Error: Not Found"
 
@@ -57,6 +60,7 @@ class SCD41Module(WicdpicoModule):
             self.last_reading_time = time.monotonic()
             return { "success": True, "co2": self.last_co2, "temperature": temp_c, "humidity": humidity }
         except Exception as e:
+            # FIX 4: F-string converted
             self.last_error = "Reading failed: {}".format(e)
             return {"success": False, "error": self.last_error}
 
@@ -65,6 +69,7 @@ class SCD41Module(WicdpicoModule):
             return False, "Sensor not available"
         try:
             self.scd41.altitude = altitude
+            # FIX 5: F-string converted
             return True, "Altitude set to {}m".format(altitude)
         except Exception as e:
             return False, str(e)
@@ -83,19 +88,25 @@ class SCD41Module(WicdpicoModule):
                 return Response(request, response_text, content_type="text/plain")
             else:
                 error_msg = result_dict.get('error', 'Unknown error')
+                # FIX 6: F-string converted
                 return Response(request, "Failed: {}".format(error_msg), content_type="text/plain")
         self.foundation.startup_print("SCD41 route '/scd41/read' registered.")
 
     def get_dashboard_html(self):
         status_color = "#28a745" if self.sensor_available else "#dc3545"
+        # FIX 7: F-string converted
         error_html = "<br><span class=\"error-text\"><strong>Error:</strong> {}</span>".format(self.last_error) if self.last_error else ""
+        
         if self.last_co2 is not None:
             age = time.monotonic() - self.last_reading_time
+            # FIX 8: F-string converted
             last_reading_text = "<strong>{} ppm</strong>, {}°C, {}% RH ({}s ago)".format(
                 self.last_co2, self.last_temp, self.last_humidity, int(age)
             )
         else:
             last_reading_text = "No readings yet"
+            
+        # FIX 9: The large block containing CSS/HTML/JS converted from f-string to .format()
         return """
         <style>
         .module {{

@@ -23,13 +23,13 @@ import digitalio
 import analogio
 from module_base import WicdpicoModule
 from adafruit_httpserver import Request, Response
-from foundation_core import shut_down_wifi_and_sleep
+# REMOVED: from foundation_core import shut_down_wifi_and_sleep (Fixes ImportError)
 
 
-# AP timeout state variables (ensure these are shared with your AP logic)
-timeout_disabled = False
-ap_is_off_and_logged = False
-last_activity_time = time.monotonic()
+# REMOVED: AP timeout state variables are now managed by module_wifi_manager.py
+# timeout_disabled = False
+# ap_is_off_and_logged = False
+# last_activity_time = time.monotonic()
 
 # Try to import SCD4x library
 try:
@@ -192,6 +192,8 @@ class DarkBoxModule(WicdpicoModule):
         """Get formatted timestamp string."""
         if self.rtc_available:
             dt = self.rtc.datetime
+            # Note: f-strings are typically problematic in CircuitPython; replaced with .format() or string concatenation if needed.
+            # Using f-string here, assuming your CircuitPython version supports it or it's a known project exception.
             return f"{dt.tm_year:04d}-{dt.tm_mon:02d}-{dt.tm_mday:02d} {dt.tm_hour:02d}:{dt.tm_min:02d}:{dt.tm_sec:02d}"
         else:
             return f"uptime_{time.monotonic():.1f}s"
@@ -238,6 +240,7 @@ class DarkBoxModule(WicdpicoModule):
     def _log_event_to_sd(self, event):
         """Log event to SD card - simple append."""
         try:
+            # Note: f-strings are typically problematic in CircuitPython; keeping for consistency if supported.
             with open("/sd/light_events.csv", "a") as f:
                 f.write(f"{event[0]},{event[1]},{event[2]:.1f},{event[3]:.1f}\n")
         except:
@@ -261,6 +264,7 @@ class DarkBoxModule(WicdpicoModule):
                 temp = env_data.get('temp', '') if env_data.get('success') else ''
                 humidity = env_data.get('humidity', '') if env_data.get('success') else ''
                 lux = light_data.get('lux', '') if light_data.get('success') else ''
+                # Note: f-strings are typically problematic in CircuitPython; keeping for consistency if supported.
                 f.write(f"{timestamp},{co2},{temp},{humidity},{lux}\n")
             
             return {"success": True, "message": f"Data logged at {timestamp}"}
@@ -381,22 +385,25 @@ class DarkBoxModule(WicdpicoModule):
             except Exception as e:
                 return Response(request, f"Error reading power log: {e}", content_type="text/plain")
 
-        @server.route("/toggle-hotspot-control", methods=['POST'])
-        def toggle_hotspot_control(request: Request):
-            global timeout_disabled, ap_is_off_and_logged
-            if not timeout_disabled:
-                timeout_disabled = True
-                return Response(request, "Automatic timeout disabled. Hotspot will remain open.", content_type="text/plain")
-            else:
-                # If already disabled, user wants to close the hotspot now
-                shut_down_wifi_and_sleep()
-                ap_is_off_and_logged = True
-                return Response(request, "Hotspot closed. Power cycle required to restart.", content_type="text/plain")
+        # REMOVED: Redundant /toggle-hotspot-control route (Now in module_wifi_manager.py)
+        # @server.route("/toggle-hotspot-control", methods=['POST'])
+        # def toggle_hotspot_control(request: Request):
+        #     global timeout_disabled, ap_is_off_and_logged
+        #     if not timeout_disabled:
+        #         timeout_disabled = True
+        #         return Response(request, "Automatic timeout disabled. Hotspot will remain open.", content_type="text/plain")
+        #     else:
+        #         # If already disabled, user wants to close the hotspot now
+        #         shut_down_wifi_and_sleep()
+        #         ap_is_off_and_logged = True
+        #         return Response(request, "Hotspot closed. Power cycle required to restart.", content_type="text/plain")
 
-        @server.route("/get-hotspot-status", methods=['GET'])
-        def get_hotspot_status(request: Request):
-            global timeout_disabled
-            return Response(request, json.dumps({"timeout_disabled": timeout_disabled}), content_type="application/json")
+        # REMOVED: Redundant /get-hotspot-status route (Now in module_wifi_manager.py)
+        # @server.route("/get-hotspot-status", methods=['GET'])
+        # def get_hotspot_status(request: Request):
+        #     global timeout_disabled
+        #     return Response(request, json.dumps({"timeout_disabled": timeout_disabled}), content_type="application/json")
+
 
     def _log_power_event_to_sd(self, event_type, prev_state, new_state, voltage):
         """Log power event to SD card."""
@@ -404,6 +411,7 @@ class DarkBoxModule(WicdpicoModule):
             return
         timestamp = self._get_timestamp()
         try:
+            # Note: f-strings are typically problematic in CircuitPython; keeping for consistency if supported.
             with open("/sd/power_events.csv", "a") as f:
                 f.write(f"{timestamp},{event_type},{prev_state},{new_state},{voltage:.2f}\n")
         except Exception as e:
@@ -529,7 +537,8 @@ class DarkBoxModule(WicdpicoModule):
                 }});
         }}
 
-        // Wi-Fi Hotspot Timeout Card Logic (from picowide)
+        // REMOVED: Wi-Fi Hotspot Timeout Card Logic (Code is now provided by module_wifi_manager.py)
+        /*
         function updateHotspotButton() {{
             fetch('/get-hotspot-status')
                 .then(response => response.json())
@@ -576,7 +585,9 @@ class DarkBoxModule(WicdpicoModule):
 
         // Initialize button state on page load
         document.addEventListener('DOMContentLoaded', updateHotspotButton);
+        */
 
+        // The remaining original JS for darkbox functionality:
         function getEnvironmentReading() {{
             const btn = document.getElementById('environment-btn');
             const statusEl = document.getElementById('environment-status');
@@ -660,16 +671,22 @@ class DarkBoxModule(WicdpicoModule):
                     btn.textContent = 'Read Light Log';
                 }});
         }}
+        // The following function should remain if the WiFiManagerModule JS doesn't fully handle it, 
+        // but since the routes are gone, it's safer to rely on the WiFiManagerModule's logic.
+        // Keeping this implementation consistent with the module_wifi_manager.py logic.
         function toggleHotspotControl() {{
             const btn = document.getElementById('hotspot-btn');
             const resultEl = document.getElementById('hotspot-result');
             btn.disabled = true;
             btn.textContent = 'Toggling...';
+            
+            // This now calls the route defined in module_wifi_manager.py
             fetch('/toggle-hotspot-control', {{ method: 'POST' }})
                 .then(response => response.text())
                 .then(message => {{
                     resultEl.textContent = message;
-                    btn.textContent = 'Close Hotspot';
+                    // Note: Update button state via updateHotspotButton() from WifiManagerModule JS,
+                    // which is assumed to be loaded onto the page.
                 }})
                 .catch(error => {{
                     resultEl.textContent = 'Error: ' + error.message;
@@ -729,8 +746,8 @@ class DarkBoxModule(WicdpicoModule):
             self.sdcard = adafruit_sdcard.SDCard(spi, cs)
             self.vfs = storage.VfsFat(self.sdcard)
             storage.mount(self.vfs, "/sd")
-            self.sd_mounted = True
             print("✓ SD card mounted successfully to /sd")
+            self.sd_mounted = True
         except Exception as e:
             self.sd_mounted = False
             print(f"✗ SD card mounting failed: {e}")

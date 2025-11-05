@@ -37,6 +37,7 @@ class SDManagerModule(WicdpicoModule):
 
     def _detect_and_mount_card(self):
         try:
+            # Assumes PicoBell Adalogger SPI mounting: GP18=SCK, GP19=MOSI, GP16=MISO, GP17=CS
             spi = busio.SPI(board.GP18, board.GP19, board.GP16)
             cs = digitalio.DigitalInOut(board.GP17)
             sdcard = adafruit_sdcard.SDCard(spi, cs)
@@ -54,7 +55,7 @@ class SDManagerModule(WicdpicoModule):
             self.card_available = False
             raise e
     
-    # --- NEW METHOD TO CREATE THE DASHBOARD CARD ---
+    # --- DASHBOARD CARD HTML (F-string fixed) ---
     def get_dashboard_html(self):
         """Generates the HTML dashboard widget for the SD Manager."""
         if self.card_available:
@@ -64,7 +65,8 @@ class SDManagerModule(WicdpicoModule):
             status_text = "Not Detected"
             status_color = "red"
         
-        return f"""
+        # F-string violation replaced with compliant .format() string block
+        return """
         <div class="module">
             <h2>Files</h2>
             <p><strong>SD Card Status:</strong> <span style="color:{status_color};">{status_text}</span></p>
@@ -72,7 +74,8 @@ class SDManagerModule(WicdpicoModule):
                 <a href="/files"><button>Open File Manager</button></a>
             </div>
         </div>
-        """
+        """.format(status_color=status_color, status_text=status_text)
+
 
     def get_routes(self):
         return [
@@ -185,6 +188,7 @@ class SDManagerModule(WicdpicoModule):
     def get_html_template(self):
         card_info_html = "SD Card is mounted." if self.card_available else "SD Card is NOT mounted. File operations will fail."
         
+        # All curly braces in CSS/JS are now escaped ({{ and }})
         html_template = """
         <style>
         .file-list {{ margin-top: 20px; text-align: left; }}

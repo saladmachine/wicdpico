@@ -19,11 +19,25 @@ def main():
         from module_SD_manager import SDManagerModule
         from module_datalogger import DataloggerModule
         
+        # 1. FOUNDATIONAL SERVICES (Must be first for dependency chain)
+        
+        # A. RTC: Provides time for all logging modules
+        rtc = RTCModule(foundation)
+        foundation.register_module("rtc", rtc)
+        
+        # B. SD Manager: Mounts the file system for all logging modules
+        sd_manager = SDManagerModule(foundation)
+        foundation.register_module("sd_manager", sd_manager)
+
+        # 2. CORE SENSOR MODULES (Can be loaded in any order now)
+        
         scd41 = SCD41Module(foundation)
         foundation.register_module("scd41", scd41)
 
         bh1750 = BH1750Module(foundation)
         foundation.register_module("bh1750", bh1750)
+
+        # 3. PERIPHERAL & LOGGING MODULES (Rely on RTC/SD for full functionality)
 
         emc2101_module = Emc2101Module(foundation)
         foundation.register_module("emc2101", emc2101_module)
@@ -33,12 +47,6 @@ def main():
         
         datalogger = DataloggerModule(foundation)
         foundation.register_module("datalogger", datalogger)
-
-        rtc = RTCModule(foundation)
-        foundation.register_module("rtc", rtc)
-        # Instantiate and register all modules
-        sd_manager = SDManagerModule(foundation)
-        foundation.register_module("sd_manager", sd_manager)
 
         # Start the web server and dashboard route (via foundation)
         foundation.start_server()

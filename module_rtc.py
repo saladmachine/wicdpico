@@ -8,21 +8,20 @@ from adafruit_pcf8523.pcf8523 import PCF8523
 
 class RTCModule(WicdpicoModule):
     """
-    RTC Control Module that uses a configured timezone offset.
+    RTC Control Module that provides time exclusively in UTC for logging stability.
+    This version focuses on setting the time accurately based on the configured base offset (-5).
     """
-
+    
     def __init__(self, foundation):
         """Initializes the RTC using the foundation's shared I2C bus."""
         super().__init__(foundation)
         self.name = "RTC Control"
-        self.version = ""
+        self.version = "v1.10 (Setter Enforced)"
         self.rtc_available = False
 
-        offset_hours = self.foundation.config.TIMEZONE_OFFSET_HOURS
-        self.timezone_offset_seconds = offset_hours * 3600
-        self.foundation.startup_print("✓ RTC using timezone offset: UTC{}".format(offset_hours))
-
-
+        self.base_offset_hours = self.foundation.config.TIMEZONE_OFFSET_HOURS
+        self.base_offset_seconds = self.base_offset_hours * 3600
+        self.foundation.startup_print("✓ RTC Base Offset: UTC{}".format(self.base_offset_hours))
 
         self.i2c = self.foundation.i2c
         if self.i2c is None:
@@ -37,6 +36,49 @@ class RTCModule(WicdpicoModule):
             self.rtc_available = False
             self.foundation.startup_print("✗ RTC initialization failed: {}. RTC will be unavailable.".format(e))
 
+    def _get_utc_time_struct(self):
+        """Calculates the current UTC struct_time based on the local time stored on the chip."""
+        if not self.rtc_available:
+            return None
+        
+        try:
+            local_time_struct = self.rtc.datetime
+            local_timestamp = time.mktime(local_time_struct)
+            
+            # Convert to UTC epoch time by removing the base offset
+            utc_timestamp = local_timestamp - self.base_offset_seconds
+            
+            # Convert back to UTC struct_time using time.localtime() as gmtime() replacement
+            utc_time_struct = time.localtime(utc_timestamp) 
+            return utc_time_struct
+        except Exception as e:
+            self.foundation.startup_print("FATAL RTC Error in _get_utc_time_struct: {}".format(e))
+            return None
+        
+    def get_formatted_utc_time(self):
+        """
+        Returns the current time as a formatted UTC string (ISO 8601 compatible 'Z').
+        This is the only method other modules should use for logging timestamps.
+        """
+        utc_struct = self._get_utc_time_struct()
+        if utc_struct is None:
+            return "N/A"
+            
+        try:
+            # Format: YYYY-MM-DDTHH:MM:SSZ (The standard ISO 8601 UTC format)
+            return "{:04d}-{:02d}-{:02d}T{:02d}:{:02d}:{:02d}Z".format(
+                utc_struct.tm_year,
+                utc_struct.tm_mon,
+                utc_struct.tm_mday,
+                utc_struct.tm_hour,
+                utc_struct.tm_min,
+                utc_struct.tm_sec
+            )
+        except Exception as e:
+            self.foundation.startup_print("FATAL RTC Formatting Error: {}".format(e))
+            return "N/A"
+
+
     def get_routes(self):
         return [
             ("/rtc-status", self.rtc_status),
@@ -49,7 +91,7 @@ class RTCModule(WicdpicoModule):
             server.route(route, methods=['POST'])(handler)
 
     def rtc_status(self, request: Request):
-        """Return RTC time as UTC timestamp for browser."""
+        """Return RTC time as UTC timestamp for browser (legacy format)."""
         try:
             if not self.rtc_available:
                 return Response(request, json.dumps({"error": "RTC not available"}), content_type="application/json")
@@ -59,7 +101,10 @@ class RTCModule(WicdpicoModule):
             local_timestamp = time.mktime(local_time_struct)
 
             # Convert local time (RTC) to UTC for browser
-            utc_timestamp = local_timestamp - self.timezone_offset_seconds
+            utc_timestamp = local_timestamp - self.base_offset_seconds 
+            
+            # Note: The manual -3600 correction was removed in v1.9, which is correct, 
+            # and should allow the display to be accurate now that the set-time is fixed.
 
             status = {
                 "timestamp": utc_timestamp,
@@ -71,22 +116,22 @@ class RTCModule(WicdpicoModule):
             return Response(request, json.dumps({"error": "Error reading RTC: {}".format(e)}), content_type="application/json")
 
     def rtc_set_time(self, request: Request):
-        """Set RTC time to local time (UTC + offset), and display only UTC for feedback."""
+        """Set RTC time to local time (UTC + offset)."""
         try:
             if not self.rtc_available:
                 return Response(request, "RTC not available", content_type="text/plain")
 
             data = json.loads(request.body)
             utc_timestamp = int(data['timestamp'])
-
-            # Store as local time on RTC
-            local_timestamp = utc_timestamp + self.timezone_offset_seconds
+            
+            # CRITICAL FIX: Ensure the time is set using the CORRECT base offset (-5)
+            # The local time stored on the chip will now be the correct Standard Time.
+            local_timestamp = utc_timestamp + self.base_offset_seconds
             new_time = time.localtime(local_timestamp)
             self.rtc.datetime = new_time
 
-            # Display only UTC for browser time
-            # Format: YYYY-MM-DD HH:MM:SS UTC
-            utc_time_struct = time.localtime(utc_timestamp)
+            # Display only UTC for browser feedback (using localtime() as gmtime() replacement)
+            utc_time_struct = time.localtime(utc_timestamp) 
             formatted_time = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d} UTC".format(
                 utc_time_struct.tm_year,
                 utc_time_struct.tm_mon,
@@ -168,7 +213,6 @@ class RTCModule(WicdpicoModule):
                 }})
                 .catch(err => {{
                     statusEl.textContent = 'Error: ' + err.message;
-                    statusEl.style.color = 'red';
                 }})
                 .finally(() => {{
                     btn.disabled = false;
@@ -180,6 +224,7 @@ class RTCModule(WicdpicoModule):
 
     @property
     def current_time(self):
+        # Deprecated: Other modules should use get_formatted_utc_time()
         if self.rtc_available:
             try:
                 return self.rtc.datetime

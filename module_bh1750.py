@@ -34,7 +34,8 @@ class BH1750Module(WicdpicoModule):
             foundation.startup_print("BH1750 sensor initialized.")
         except Exception as e:
             self.available = False
-            foundation.startup_print(f"BH1750 unavailable: {e}")
+            # FIXED F-STRING VIOLATION
+            foundation.startup_print("BH1750 unavailable: {}".format(e))
 
         # Try to set up RTC (as in module_scd41.py)
         try:
@@ -77,7 +78,8 @@ class BH1750Module(WicdpicoModule):
             self.dark_count = 0
             self.current_event = None
         state = "started" if self.recording_events else "stopped"
-        return Response(request, f"Light event recording {state}.", content_type="text/plain")
+        # FIXED F-STRING VIOLATION
+        return Response(request, "Light event recording {}.".format(state), content_type="text/plain")
 
     def handle_read_events(self, request: Request):
         try:
@@ -85,7 +87,8 @@ class BH1750Module(WicdpicoModule):
                 log = f.read()
             return Response(request, log, content_type="text/plain")
         except Exception as e:
-            return Response(request, f"Error reading event log: {e}", content_type="text/plain")
+            # FIXED F-STRING VIOLATION
+            return Response(request, "Error reading event log: {}".format(e), content_type="text/plain")
 
     def handle_clear_events(self, request: Request):
         try:
@@ -94,7 +97,8 @@ class BH1750Module(WicdpicoModule):
             self.csv_header_written = True
             return Response(request, "Light event log cleared.", content_type="text/plain")
         except Exception as e:
-            return Response(request, f"Error clearing event log: {e}", content_type="text/plain")
+            # FIXED F-STRING VIOLATION
+            return Response(request, "Error clearing event log: {}".format(e), content_type="text/plain")
 
     def _get_timestamp(self):
         # Match the SCD41 pattern: use RTC if available, else monotonic time
@@ -146,7 +150,7 @@ class BH1750Module(WicdpicoModule):
                         self.dark_count = 0
 
     def get_dashboard_html(self):
-        # Use a single toggle button for start/stop event recording
+        # The HTML/JS section appears to be F-string compliant (it uses standard Python strings)
         return """
         <div class="module">
             <h2>Ambient Light (BH1750)</h2>
@@ -214,6 +218,7 @@ class BH1750Module(WicdpicoModule):
                 })
                 .finally(() => {
                     btn.disabled = false;
+                    btn.textContent = 'Start Light Event Recording';
                 });
         }
 

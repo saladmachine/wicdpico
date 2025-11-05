@@ -12,7 +12,7 @@ class DataloggerModule(WicdpicoModule):
     def __init__(self, foundation):
         super().__init__(foundation)
         self.name = "Data Logger"
-        self.version = "v2.0"
+        self.version = "v2.3 (Logging UTC)"
         self.log_file_path = "/sd/darkbox.csv"
         
         # State variables for automatic logging
@@ -46,16 +46,16 @@ class DataloggerModule(WicdpicoModule):
             return "Error: Required sensor modules not loaded."
 
         try:
-            now = rtc.current_time
-            timestamp = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}".format(now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec)
+            # FIX: Use the reliable, formatted UTC time string from the RTCModule
+            timestamp = rtc.get_formatted_utc_time()
         except Exception:
             timestamp = "N/A"
 
         try:
             scd_data = scd41.get_sensor_reading()
             co2 = scd_data.get('co2', 'N/A')
-            temp = scd_data.get('temperature', 'N/A')
-            humidity = scd_data.get('humidity', 'N/A')
+            temp = scd_data.get('temperature', 'N/A') 
+            humidity = scd41.get_sensor_reading().get('humidity', 'N/A')
         except Exception:
             co2, temp, humidity = "N/A", "N/A", "N/A"
 
@@ -65,7 +65,8 @@ class DataloggerModule(WicdpicoModule):
         except Exception:
             lux = "N/A"
 
-        csv_row = f"{timestamp},{co2},{temp},{humidity},{lux}\n"
+        # Removed f-string for CSV row creation
+        csv_row = "{},{},{},{},{}\n".format(timestamp, co2, temp, humidity, lux)
 
         try:
             header_needed = False
@@ -76,12 +77,15 @@ class DataloggerModule(WicdpicoModule):
 
             with open(self.log_file_path, "a") as f:
                 if header_needed:
-                    header = "Timestamp,CO2_ppm,Temperature_C,Humidity_RH,Lux\n"
+                    # UPDATED HEADER to reflect UTC logging
+                    header = "Timestamp_UTC,CO2_ppm,Temperature_C,Humidity_RH,Lux\n"
                     f.write(header)
                 f.write(csv_row)
-            return f"Data logged to {self.log_file_path}"
+            # Removed f-string for success message
+            return "Data logged to {}".format(self.log_file_path)
         except Exception as e:
-            return f"Error writing to file: {e}"
+            # Removed f-string for error message
+            return "Error writing to file: {}".format(e)
 
     def handle_log_request(self, request: Request):
         """Handles the 'Log Data' button press."""
@@ -98,9 +102,11 @@ class DataloggerModule(WicdpicoModule):
             self.log_interval = interval
             self.is_logging = True
             self.last_log_time = time.monotonic() # Start timer immediately
-            return Response(request, f"Logging started every {self.log_interval} seconds.", content_type="text/plain")
+            # Removed f-string for start logging message
+            return Response(request, "Logging started every {} seconds.".format(self.log_interval), content_type="text/plain")
         except Exception as e:
-            return Response(request, f"Error: {e}", content_type="text/plain")
+            # Removed f-string for error message
+            return Response(request, "Error: {}".format(e), content_type="text/plain")
 
     def stop_logging(self, request: Request):
         """Handles the 'Stop Log' button press."""
@@ -117,9 +123,9 @@ class DataloggerModule(WicdpicoModule):
 
     def get_dashboard_html(self):
         """Generates the HTML dashboard card for the logger."""
-        return f"""
+        return """
         <div class="module">
-            <h2>{self.name} {self.version}</h2>
+            <h2>{name} {version}</h2>
             
             <div class="control-group">
                 <p><strong>Manual Log:</strong></p>
@@ -129,7 +135,7 @@ class DataloggerModule(WicdpicoModule):
             <div class="control-group" style="margin-top: 15px; border-top: 1px solid #eee; padding-top: 15px;">
                 <p><strong>Automatic Logging:</strong></p>
                 <label for="log-interval">Log every (seconds):</label>
-                <input type="number" id="log-interval" value="{self.log_interval}" style="width: 80px; padding: 5px;">
+                <input type="number" id="log-interval" value="{log_interval}" style="width: 80px; padding: 5px;">
                 <button id="toggle-log-btn" onclick="toggleLogging()">Start Log</button>
             </div>
             <p id="log-status"></p>
@@ -195,4 +201,8 @@ class DataloggerModule(WicdpicoModule):
             btn.disabled = false;
         }}
         </script>
-        """
+        """.format(
+            name=self.name,
+            version=self.version,
+            log_interval=self.log_interval
+        )

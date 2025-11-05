@@ -31,7 +31,7 @@ class Emc2101Module(WicdpicoModule):
             self._last_action = "EMC2101 initialized OK"
             self.set_fan_speed(self._fan_speed_percent)
         except Exception as e:
-            self._last_action = "I2C init error: {}".format(e)
+            self._last_action = "I2C init error: {}".format(e) # COMPLIANT
             self.available = False
 
     def set_fan_speed(self, percent):
@@ -43,7 +43,7 @@ class Emc2101Module(WicdpicoModule):
         try:
             # Set manual fan speed only, as per Adafruit official documentation
             self.emc2101.manual_fan_speed = self._fan_speed_percent
-            self._last_action = "Speed set to {}%".format(self._fan_speed_percent)
+            self._last_action = "Speed set to {}%".format(self._fan_speed_percent) # COMPLIANT
         except Exception as e:
             self._last_action = "I2C error: {}".format(e)
 

@@ -26,18 +26,26 @@ class WicdpicoFoundation:
         self.startup_log = []
         self.server = None
         self.modules = {}
-        self.module_order = [] # NEW: List to control display order
+        self.module_order = []
         self.config_failed = False
         self.wifi_mode = "AP"
         self.templates = TemplateSystem()
         self.server_ip = None
         self.poll_error_logged = False
         
+        # FIX 1: Initialize self.i2c to None defensively BEFORE the try block.
+        # This guarantees the attribute exists, preventing AttributeError if initialization fails.
+        self.i2c = None 
+        
         try:
             self.i2c = busio.I2C(board.GP5, board.GP4)
             self.startup_print("✓ I2C Bus initialized on GP5/GP4.")
+        except RuntimeError as e:
+            # Catch RuntimeError for the "No pull up" error (Adafruit standard)
+            self.startup_print("✗ FAILED to initialize I2C bus: {} (Attribute self.i2c set to None).".format(e))
         except Exception as e:
-            self.startup_print("✗ FAILED to initialize I2C bus: {}".format(e))
+            # Catch any other exception during I2C setup
+            self.startup_print("✗ FAILED to initialize I2C bus: {} (Attribute self.i2c set to None).".format(e))
 
     def load_user_config(self):
         """
