@@ -42,7 +42,9 @@ This script copies the latest code and libraries directly to your CIRCUITPY driv
 **`module_datalogger.py`**/**`code_datalogger.py`** - Data logging logic\
 **`module_battery_monitor.py`**/**`code_battery_monitor.py`** - Power source monitoring\
 **`module_water_level.py`**/**`code_water_level.py`** - Water level detection (FS-IR02B sensor)\
-**`module_file_manager.py`**/**`code_file_manager.py`** - Web-based file editor
+**`module_file_manager.py`**/**`code_file_manager.py`** - Web-based file editor\
+**`module_live_chart.py`** - Zero-dependency realtime HTML5 Canvas plotter\
+**`diagnostic_sd.py`** - Standalone hardware verification tool for SD card SPI connections
 
 ### Multi-module Combinations
 Combine modules into systems
