@@ -50,6 +50,9 @@ Combine modules into systems
 **`system_darkbox.py`** - **DarkBox Growth Chamber**\
 This is the reference implementation cited in the **SoftwareX** article *"WicdPico: A modular CircuitPython framework for affordable, web-based instrumentation and control in scientific research"*. It demonstrates a complete application combining CO2, Light, and Temperature sensors with Fan control and Data Logging.
 
+**`system_wicdair.py`** - **WicdAir Air Quality Monitor**\
+A dedicated environmental monitoring station using SCD30 and RTC. Features robust CSV data logging, ISO8601 timestamps, live trend charts, and graceful hardware fallback. Demonstrates the "No JSON" memory optimization pattern.
+
 ### Multi-module Combinations
 Combine modules into systems
 Example - system_darkbox.py combines eight modules into a package of instrumentation and controls for a dark plant growth chamber used to grow plants without light using organic chemicals such as acetate in the nutrient solution:
