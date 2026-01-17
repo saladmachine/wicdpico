@@ -1,4 +1,4 @@
-import json
+# module_bh1750.py
 import time
 from module_base import WicdpicoModule
 from adafruit_httpserver import Request, Response
@@ -70,7 +70,15 @@ class BH1750Module(WicdpicoModule):
 
     def handle_light_request(self, request: Request):
         reading = self.get_light()
-        return Response(request, json.dumps(reading), content_type="application/json")
+        # Optimization: Manual JSON construction
+        if reading.get("success"):
+            json_str = '{{"success": true, "lux": {}}}'.format(reading['lux'])
+        else:
+            # Escape quotes in error message just in case
+            error_msg = reading.get('error', 'Unknown').replace('"', '\\"')
+            json_str = '{{"success": false, "error": "{}"}}'.format(error_msg)
+            
+        return Response(request, json_str, content_type="application/json")
 
     def handle_toggle_recording(self, request: Request):
         self.recording_events = not self.recording_events

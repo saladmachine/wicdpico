@@ -83,18 +83,13 @@ class WicdpicoModule:
         foundation.register_module("custom", module)
     """
     
-    def __init__(self, foundation):
+    def __init__(self, **kwargs):
         """
-        Initialize base module with foundation integration.
+        Initialize base module.
         
-        Sets up foundation reference and default enabled state.
-        Subclasses should call super().__init__(foundation) first,
-        then perform module-specific initialization.
-        
-        :param foundation: Foundation instance for system services
-        :type foundation: WicdpicoFoundation
+        Compatible with Dependency Injection pattern. accepts generic kwargs
+        so subclasses can accept whatever they need.
         """
-        self.foundation = foundation
         self.enabled = False
         
     def register_routes(self, server):

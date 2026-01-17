@@ -1,0 +1,385 @@
+Title: WicdPico: A modular CircuitPython framework for affordable, web-based instrumentation and control in scientific research.   
+
+  
+
+Authors: Joe Parduea, Sarah Armstronga, Hao Ganb, Kellie J. Waltersa   
+
+  
+
+Affiliation:   
+
+aDepartment of Plant Sciences, University of Tennessee, Knoxville   
+
+bDepartment of Biosystems Engineering and Soil Sciences, University of Tennessee, Knoxville  
+
+  
+
+Contact email: jpardue4@vols.utk.edu   
+
+ 
+
+Abstract  
+
+Scientific research, particularly in fields like the Plant Sciences, often requires specialized instrumentation and control (I&C) systems that may be prohibitively expensive or inflexible. We introduce WicdPico, an open-source CircuitPython framework for the Raspberry Pi Pico 2 W and integrated web server, accessible by connecting a browser-enabled device directly to the local network it broadcasts. This provides a dashboard for real-time monitoring and control, eliminating the need for custom client software or network infrastructure. The platform accelerates research by providing a modular architecture for direct real time clock (PCF8523) timestamped data logging to an SD card. Researchers can rapidly develop and integrate custom modules for new sensors and actuators by implementing a few predefined methods. We demonstrate WicdPico's utility with the "DarkBox Growth Chamber," a fully replicable system that integrates modules to monitor CO2, temperature/humidity (SCD41), and ambient light (Bh1750), while also managing fan speed (EMC2101). By providing a complete, documented platform, WicdPico significantly lowers the financial and technical barriers to creating customized, web-enabled research tools, offering a powerful and accessible open-source alternative to commercial equipment.  
+
+ 
+
+Keywords: Raspberry Pi Pico, Scientific Instrumentation, Data Logging, Instrumentation and Control (I&C), Open-Source, Controlled Environment Agriculture 
+
+ 
+
+ 
+
+Nr 
+
+Code metadata description  
+
+Metadata 
+
+C1 
+
+Current code version 
+
+v1.02 
+
+C2 
+
+Permanent link to code/repository used for this code version 
+
+https://github.com/saladmachine/wicdpico 
+
+C3 
+
+Permanent link to reproducible capsule  
+
+ 
+
+  
+
+C4 
+
+Legal code license 
+
+MIT License 
+
+C5 
+
+Code versioning system used 
+
+git 
+
+C6 
+
+Software code languages, tools and services used 
+
+Circuitpython 
+
+C7 
+
+Compilation requirements, operating environments and dependencies 
+
+  
+
+C8 
+
+If available, link to developer documentation/manual 
+
+ 
+
+C9 
+
+Support email for questions 
+
+jpardue4@vols.utk.edu 
+
+ 
+
+1. Motivation and Significance  
+
+Controlled environment agriculture (CEA) is a cornerstone of modern agricultural research, requiring precise I&C systems to manage factors like light, CO₂, temperature, and humidity [3]. However, the I&C systems used in plant sciences and CEA are often proprietary, costly, and technologically outdated, with some legacy systems still relying on antiquated data transfer methods. This high cost and lack of flexibility can create a significant barrier for research institutions, educators, and small-scale growers. [4,5].  
+
+The scientific problem WicdPico solves is the need for an affordable, modular, and easily deployable I&C platform that does not depend on existing network infrastructure. While the rise of Free and Open Source Software and Hardware (FOSSH) has enabled researchers to build their own sophisticated systems, many existing solutions require significant programming expertise or a stable Wi-Fi network. WicdPico addresses this gap by providing a framework that allows a researcher to create a standalone, browser-controlled instrument with minimal setup .[6–10].  
+
+A user interacts with the software by first loading the WicdPico framework onto a Raspberry Pi Pico 2 W. After connecting the desired sensor and actuator hardware, the device is powered on. It immediately broadcasts an access point for its own wireless network. The user then connects a smartphone, tablet, or laptop to this network and navigates to the device’s IP address in a web browser. The browser loads an interactive dashboard for real-time data visualization and control, allowing them to adjust parameters, monitor experiments, and download logged data without any custom apps or physical connection to a computer. This approach will contribute to scientific discovery by enabling more complex, replicated experiments that would otherwise be cost-prohibitive.  
+
+ 
+
+2. Software Description  
+
+2.1. Software Architecture  
+
+WicdPico [11] is a CircuitPython [12] framework designed around a central WicdPico Foundation core class that runs on a Raspberry Pi Pico 2 W. The system is designed with a modular, compositional architecture to promote code reuse, testability, and clarity. The design philosophy is centered on a distinct separation of concerns between the core system foundation and single-purpose, pluggable modules. The WicdPico Foundation is responsible for initializing the hardware, managing the network access point, running the web server (based on the adafruit_httpserver library [13]), and providing a single sharable I2C bus for different modules.  
+
+ 
+
+The system's primary innovation is its modularity. All functionality is encapsulated in discrete WicdPico Module objects, which are loaded and managed by the foundation. Each module (e.g., module_scd41.py) is a self-contained Python class that inherits from a base class and interfaces with the core system by implementing three key methods:  
+
+ 
+
+register_routes (self, server): Defines any web API endpoints needed for the module's functionality, such as a POST request to activate a peripheral.  
+
+get_dashboard_html(self): Returns an HTML snippet that is dynamically integrated into the main web dashboard, creating a widget for that module.  
+
+update(self): Contains code that is executed periodically by the main loop, such as polling a sensor value.  
+
+ 
+
+This architecture allows a researcher to create a new instrument simply by writing a new module file and registering it with the foundation, promoting rapid prototyping. To fully illustrate this design, the architecture is presented through a series of diagrams that each detail a different perspective of the system.  
+
+  
+
+  
+
+Figure 1: WicdPico System Architecture and Composition  
+
+ 
+
+The WicdPico system's architectural pattern is shown in Figure 1, illustrating the compositional relationship between the core foundation, shared hardware resources, and pluggable Modules. This flowchart describes the static design principle where the central Foundation provides services and managed resources (e.g., a shared I2C bus) to a collection of independent Modules. Each application is then composed by selecting and orchestrating a set of these Modules.  
+
+  
+
+  
+
+Figure 2: Application Deployment Workflow for WicdPico  
+
+ 
+
+The workflow for deploying a WicdPico application from development to the target hardware is shown in Figure 2. This diagram shows the process by which a specific system grouping of modules, defined in a system_*.py file, is deployed to the device. The system's flexibility is highlighted by this process, where the entire functionality of the device can be changed by renaming the desired system file to code.py, which CircuitPython executes on boot.  
+
+  
+
+  
+
+ Figure 3: Single-Module Test Harness Flow Example Using the SCD41 Module  
+
+  
+
+The runtime execution of a single-module test harness, using the code_scd41.py file as an example, is shown in Figure 3. [Note that code_scd41.py must be copied to code.py on a CircuitPython device to be run.] This flowchart illustrates the pattern for module development and validation. The diagram shows the simplest possible application: the Foundation instantiates and registers a single module to confirm its functionality in isolation. This approach allows developers to verify hardware and driver behavior for single devices with a minimal test harness before integrating the module into a more complex system application, thereby simplifying debugging and ensuring modular integrity.  
+
+  
+
+Figure 4: DarkBox Growth Chamber System Application Flow.  
+
+A runtime execution flow of a complete application with multiple modules, using the system_darkbox.py file as a concrete example is shown in Figure 4. This diagram illustrates the system's lifecycle in practice, beginning with the instantiation of the foundation, followed by the sequential initialization and registration of multiple hardware modules. It concludes with the server launch and the transition into the main event-driven loop, where the foundation.poll() method handles asynchronous HTTP requests and other runtime tasks.  
+
+  
+
+2.2. Software Functionalities  
+
+Standalone Wireless Access Point: Creates its own network, allowing direct connection from any browser-enabled device without needing an external router or internet.  
+
+ 
+
+Modular Sensor/Control System: Easily supports new I2C, SPI, or GPIO hardware by adding self-contained Python modules.  
+
+ 
+
+On-Device Data Logging: Includes modules for time-stamped data logging to an SD card, with a real-time clock that can be synchronized with time from the web browser.  
+
+ 
+
+Dynamic Web Dashboard: Provides a real-time, interactive HTML dashboard for monitoring sensors and controlling actuators, accessible from a phone or laptop. The dashboard displays cards with module functions as in Figure 5. This shows a smartphone web browser and eight cards that are accessed by scrolling down on the webpage. Some buttons open additional pages for more detailed information that also contain a button to return to the main dashboard. This system allows a simple initial starting dashboard for the user that can be navigated in depth for more complex functions. 
+
+ 
+
+ 
+
+ 
+
+Figure 5: An example dashboard on a smartphone including a webpage showing 8 cards. 
+
+ 
+
+3. Illustrative Example  
+
+DarkBox: An Autonomous Chamber for Growing Plants in the Dark:   
+
+We illustrate WicdPico’s capabilities through its deployment in the "DarkBox," an unlighted growth chamber designed to support novel CEA research on alternative photosynthetic systems.This application is an ideal use case as it requires precise, simultaneous management of environmental conditions in the strict absence of light, showcasing the framework's modularity and robust control features.   
+
+ 
+
+Figure 6: Darkbox Wireless Instrumentation and Control System 
+
+ 
+
+System Configuration:   
+
+The entire I&C system for the DarkBox is managed by a single Raspberry Pi Pico 2 W [1]. The experimental protocol requires that the chamber remains dark at all times; a researcher enters a windowless dark room and uses a 940nm infrared camera and light source to work without exposing the chamber interior to visible light. The WicdPico instance is configured with the following software modules to create a complete, cohesive instrument. 
+
+ 
+
+Atmospheric Control and Verification:   
+
+module_scd41.py: This module uses the SCD41[14] to monitor CO₂, temperature, and humidity for the interior of the chamber.  
+
+module_bh1750.py: A simple light sensor (LUX) BH1750[15] is included inside the chamber not for light intensity measurement, but as a crucial fail-safe for the experiment to ensure no light contamination occurs. It continuously records the light intensity, logging any event where light is detected to ensure experimental integrity.   
+
+module_emc2101.py: Uses the EMC1201[16] to manage a light-tight ventilation fan. It implements a control loop that uses data from both internal and external sensors to adjust fan speed, maintaining an equilibrium between the inside and outside environments to properly vent CO₂ released during heterotrophic respiration.   
+
+ 
+
+Data Management:  
+
+An Adafruit Picowbell Adalogger[17] provides a real time clock for data timestamp and an SD card slot for data recording. module_sd_card.py and module_rtc_control.py work in tandem to log all atmospheric and hydroponic system data to an SD card with accurate timestamps for later statistical analysis. The real time clock is provided by a PCF8523[18].  
+
+The core WicdPico Foundation serves the web-based dashboard, which is the primary user interface.  
+
+DarkBox Growth Chamber Design: 
+
+Figure 7: DarkBox Growth Chamber design 
+
+ 
+
+Light-tight 500mm cube growth chamber:  
+
+Growth chambers in plant sciences are essential for studying plants under controlled conditions, allowing researchers to maintain stable environmental parameters while varying a single factor to observe its independent effects on growth[19,20]. Our 500mm cube growth chamber is designed to precisely measure light, temperature, humidity, and CO₂, and to control air flow. It was implemented using Inkscape to generate a tabbed box design that was cut from 3mm baltic birch with a lasercutter Figure 7 illustrates this. Figure 7 (a,b) are photos of the darkbox with the door open and the CO2, temperature, humidity, and light sensor shown above the exhaust fan port on the inside of the door. Figure 7(c) shows a Tinkercad drawing of the darkbox in tan with light tight fan boxes in grey. Figure 7 (d) shows a Tinkercad drawing of the light tight fan box with the side removed to show the light blocking baffles which are painted flat black to minimize internal light reflections. Figure 8 is a close-up photo of the light tight fan box on the outside of the door with the Raspberry Pi Pico 2 W and PiCowBell Adalogger, both on an Adafruit PicowBell Doubler board, along with the Emc2101 fan controller, and the Stemma 5-Port Hub. A I2C wire runs through the door from the hub to the inner door sensors. 
+
+  
+
+Researcher Workflow  
+
+A researcher’s workflow highlights the system's ease of use and accessibility. First, outside the dark laboratory room, they connect a device like a smartphone or laptop wirelessly to the access point broadcast by the chamber. By navigating to the device's IP address in a browser, they access the dashboard. From this single interface, they can define all experimental parameters: reading the CO2, temperature, humidity, and light intensity, and setting the fan speed. 
+
+The system then runs autonomously for the duration of the experiment. The researcher can periodically monitor live data streams from all sensors via the dashboard and, upon completion, retrieve the complete dataset from the SD card. This example showcases how WicdPico enables the rapid development of a specialized scientific instrument, integrating complex sensing, control logic, and data logging into a single, standalone device that is easily operated through a universally accessible web interface without requiring a dedicated app or connection to external network infrastructure.  
+
+ 
+
+Research Application: Growing plants in the dark via acetate supplementation  
+
+Experimental Approach  
+
+A key challenge in controlled environment agriculture (CEA) and space plant production is the reliance on energy-intensive and costly artificial lighting, driving the need for systems that use alternative carbon sources to reduce the dependence on light for photosynthesis. Acetate, a two-carbon molecular ion, shows potential as a carbon alternative for plant production [21] in the absence of light, as demonstrated in microalgae, cyanobacteria [22,23], and tobacco cell cultures [24]. Research suggests that acetate can directly integrate into acetyl-CoA, fuelling the tricarboxylic acid (TCA) cycle, providing energy for biosynthesis while bypassing the light-dependent reactions required for natural photosynthesis [23,25,26]. This alternative carbon source has the potential to drastically reduce energy costs due to artificial lighting currently used in CEA systems [27–29].   
+
+This DarkBox Growth Chamber system supports experiments designed to investigate acetate metabolism in plants grown under low- to no-light environments while autonomously regulating temperature, humidity, and CO2. In this example, lettuce seedlings are grown in petri dishes containing agar media and supplemented with sodium acetate across a range of concentrations (0 – 15 mM) every three days. Seedlings are grown inside the DarkBox Growth Chamber for up to four weeks under complete darkness.  
+
+Our aim is to determine whether acetate can serve as an alternative carbon source, bypassing natural photosynthetic pathways and entering directly into the acetyl-CoA metabolism that fuels the TCA cycle. Growth metrics will include biomass, leaf number, and root and shoot length. At harvest, seedlings will be flash-frozen and stored at -80 °C for LC-MS quantification of 13C-labeled TCA intermediates and metabolites to trace acetate assimilation, providing a framework for better understanding plant heterotrophy and supporting development of energy-efficient, closed-loop plant production systems for both terrestrial and space applications [30,31].  
+
+ 
+
+ 
+
+  
+
+4. Impact  
+
+The primary impact of WicdPico lies in lowering the financial and technical barriers to developing custom scientific instrumentation. 
+
+New Research Questions: By drastically reducing the cost per experimental unit, WicdPico allows researchers to pursue questions that require a high degree of replication. Instead of one expensive growth chamber, a lab can build ten for a fraction of the cost, enabling robust studies on multi-factor interactions (e.g., light, CO₂, temperature, humidity) that were previously impractical.  
+
+ 
+
+Improving Existing Research: The framework improves the rigor and accessibility of existing research. Its open-source nature ensures that experimental setups can be precisely replicated by other labs globally, simply by sharing the hardware list and the WicdPico configuration files.  
+
+ 
+
+Changing Daily Practice: WicdPico changes how researchers interact with their experiments. The ability to monitor a chamber's status or adjust a parameter from a smartphone saves time and reduces disturbance to the experiment. Preserving measurements in .csv files allows for later analysis. 
+
+ 
+
+Widespread Use and Outreach: The software, with all documentation and design files hosted on GitHub under an MIT license, is intended for wide adoption. Its simplicity makes it an ideal educational tool for university courses, agricultural extension programs, and citizen science initiatives. Its low cost makes it particularly valuable for researchers in resource-constrained settings.  
+
+  
+
+5. Conclusions  
+
+WicdPico is a powerful, flexible, and accessible open-source framework that addresses a critical need for low-cost, modular I&C systems in scientific research. Its core architectural innovation—a self-contained, browser-controlled node that requires no external network—makes it uniquely suited for rapid deployment in diverse environments, from laboratories to remote field sites. As demonstrated by its application in a controlled environment plant experiment, WicdPico empowers researchers to build sophisticated, customized instruments, thereby lowering barriers to entry, enhancing experimental reproducibility, and paving the way for new scientific inquiries.  
+
+ 
+
+CRediT authorship contribution statement: 
+
+Joe Pardue: Writing – Review & editing, Writing – original draft, Software, Methodology.  
+
+Sarah Armstrong: Writing – review & editing, Project administration 
+
+Hao Gan: Writing – Review & editing, Formal analysis. 
+
+Kellie J. Walters: Supervision, Resources, Project administration, Funding acquisition.  
+
+ 
+
+Funding 
+
+This work was supported by the Agriculture and Food Research Initiative, project award no. 2023-68013-39640, and Hatch project TEN00617 from the U.S. Department of Agriculture’s National Institute of Food and Agriculture  
+
+ 
+
+Declaration of Competing Interest 
+
+The authors declare that they have no known competing financial interests or personal relationships that could have appeared to influence the work reported in this paper. 
+
+ 
+
+Data availability 
+
+I have shared the link to my code on GitHub: https://github.com/saladmachine/wicdpico 
+
+ 
+
+References  
+
+[1]	Raspberrypi.com (2024). 
+
+[2]	S.H.M. Mehr, SoftwareX 30 (2025) 102175. 
+
+[3]	A. Dsouza, L. Newman, T. Graham, E.D.G. Fraser, Agric. Syst. 209 (2023) 103673. 
+
+[4]	D.K. Fisher, P.J. Gould, Mod. Instrum. 01 (2012) 8–20. 
+
+[5]	B. Grindstaff, M.E. Mabry, P.D. Blischak, M. Quinn, J. Chris Pires, Appl. Plant Sci. 7 (2019) e11280. 
+
+[6]	J.E.L. Dias, A. Revoly, Z. Bártfai, G. Barkó, Prog. Agric. Eng. Sci. (2025). 
+
+[7]	D.K. Fisher, L.K. Woodruff, S.S. Anapalli, S.R. Pinnamaneni, J. Sens. Actuator Netw. 7 (2018) 47. 
+
+[8]	J.M. Pearce, Science 337 (2012) 1303–1304. 
+
+[9]	P. Patil, R. Kestur, M. Rao, A. C†, in: 2023 IEEE Applied Sensing Conference (APSCON), IEEE, 2023, pp. 1–3. 
+
+[10]	Ramin Shamshiri, Kalantari, Fatemeh, C. Ting, K, K. R. Thorp, I. A. Hameed, C. Weltzien, D. Ahmad, Z. Mojgan Shad, Int. J. Agric. Biol. Eng. 11 (2018) 1–22. 
+
+[11]	J. Pardue, Https://github.com/saladmachine/wicdpico (2025). 
+
+[12]	Adafruit, Circuitpython.org (2025). 
+
+[13]	Adafruit, Https://docs.circuitpython.org/projects/httpserver/en/latest/ (2025). 
+
+[14]	Sensiron, SCD41 CO2, Temperature, and Humidity Sensor Datasheet, 2024. 
+
+[15]	Rohm, Inc., (2011). 
+
+[16]	Microchip, Inc., (2022). 
+
+[17]	Adafruit, (n.d.). 
+
+[18]	NXP, Inc., PCF8523 RTC Datasheet, 2015. 
+
+[19]	A.S. Porter, C. Evans-Fitz Gerald, J.C. McElwain, C. Yiotis, C. Elliott-Kingston, Plant Methods 11 (2015) 44. 
+
+[20]	F. Katagiri, D. Canelon-Suarez, K. Griffin, J. Petersen, R.K. Meyer, M. Siegle, K. Mase, PLoS One 10 (2015) e0126826. 
+
+[21]	W. Luc, X. Fu, J. Shi, J.-J. Lv, M. Jouny, B.H. Ko, Y. Xu, Q. Tu, X. Hu, J. Wu, Q. Yue, Y. Liu, F. Jiao, Y. Kang, Nat. Catal. 2 (2019) 423–430. 
+
+[22]	J.P. Badalamenti, C.I. Torres, R. Krajmalnik-Brown, Biotechnol. Bioeng. 111 (2014) 223–231. 
+
+[23]	C. Wu, J. Lo, C. Urban, X. Gao, B. Yang, J. Humphreys, S. Shinde, X. Wang, K.J. Chou, P. Maness, N. Tsesmetzis, D. Parker, W. Xiong, Nat. Synth. 1 (2022) 615–625. 
+
+[24]	E.C. Hann, M. Harland-Dunaway, A.J. Garcia, J.E. Meuser, R.E. Jinkerson, Front. Plant Sci. 14 (2023) 1104751. 
+
+[25]	H.W. Choi, Plant Pathol. J. 40 (2024) 99–105. 
+
+[26]	E.C. Hann, S. Overa, M. Harland-Dunaway, A.F. Narvaez, D.N. Le, M.L. Orozco-Cárdenas, F. Jiao, R.E. Jinkerson, Nat. Food 3 (2022) 461–471. 
+
+[27]	R.E. Blankenship, D.M. Tiede, J. Barber, G.W. Brudvig, G. Fleming, M. Ghirardi, M.R. Gunner, W. Junge, D.M. Kramer, A. Melis, T.A. Moore, C.C. Moser, D.G. Nocera, A.J. Nozik, D.R. Ort, W.W. Parson, R.C. Prince, R.T. Sayre, Science 332 (2011) 805–809. 
+
+[28]	A. Melis, Plant Sci. 177 (2009) 272–280. 
+
+[29]	N. Engler, M. Krarti, Renew. Sustain. Energy Rev. 141 (2021) 110786. 
+
+[30]	D.K. Allen, P.D. Bates, H. Tjellström, Prog. Lipid Res. 58 (2015) 97–120. 
+
+[31]	Committee on Biological and Physical Sciences Research in Space 2023-2032, Space Studies Board, Division on Engineering and Physical Sciences, National Academies of Sciences, Engineering, and Medicine, Thriving in Space : Ensuring the Future of Biological and Physical Sciences Research : A Decadal Survey for 2023-2032 (2023). 
+
+ 
+
+ 

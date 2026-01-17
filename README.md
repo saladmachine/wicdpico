@@ -36,12 +36,19 @@ This script copies the latest code and libraries directly to your CIRCUITPY driv
 **`module_scd41.py`**/**`code_scd41.py`** - CO2, temperature, humidity sensor\
 **`module_bh1750.py`**/**`code_bh1750.py`** - Digital light sensor\
 **`module_emc2101.py`**/**`code_emc2101.py`** - Fan control\
-**`module_led_control.py`**/**`code_led_control.py`** - Onboard LED control and status\
-**`module_rtc_control.py`**/**`code_rtc_control.py`** - Real-time clock (PCF8523) with browser time sync\
-**`module_sd_card.py`**/**`code_sd_card.py`** - SD card data logging\
-**`module_power_monitor.py`**/**`code_power_monitor.py`** - Power source monitoring\
+**`module_pico_LED.py`**/**`code_pico_LED.py`** - Onboard LED control and status\
+**`module_rtc.py`**/**`code_rtc.py`** - Real-time clock (PCF8523) with browser time sync\
+**`module_SD_manager.py`**/**`code_SD_manager.py`** - SD card file management\
+**`module_datalogger.py`**/**`code_datalogger.py`** - Data logging logic\
+**`module_battery_monitor.py`**/**`code_battery_monitor.py`** - Power source monitoring\
 **`module_water_level.py`**/**`code_water_level.py`** - Water level detection (FS-IR02B sensor)\
 **`module_file_manager.py`**/**`code_file_manager.py`** - Web-based file editor
+
+### Multi-module Combinations
+Combine modules into systems
+### Reference Implementations
+**`system_darkbox.py`** - **DarkBox Growth Chamber**\
+This is the reference implementation cited in the **SoftwareX** article *"WicdPico: A modular CircuitPython framework for affordable, web-based instrumentation and control in scientific research"*. It demonstrates a complete application combining CO2, Light, and Temperature sensors with Fan control and Data Logging.
 
 ### Multi-module Combinations
 Combine modules into systems

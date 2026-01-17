@@ -5,7 +5,8 @@ WicdPico is a modular sensor and control platform for the Raspberry Pi Pico 2 W,
 
 CircuitPython Compatibility Statement
 All server-side code for the dashboard is written in CircuitPython. It is required that any Python code or module used in this project be first verified as available and compatible with CircuitPython. Do not use features, modules, or libraries that are not supported by CircuitPython firmware.
-f strings are incompatible with circuitpython. Never use f strings.
+
+f-strings are technically supported in newer CircuitPython versions but are discouraged to maintain compatibility with older M0/M4 boards and to minimize string interpolation overhead. Prefer .format() or concatenation.
 
 Core Components
 foundation_core.py: Core system for WiFi/network, web server, module registration, and settings loading.
@@ -113,6 +114,28 @@ Use system_*.py for integrated, production-ready systems.
 Keep modules in the root directory for reliable imports in CircuitPython.
 
 Prefer simple, direct hardware interaction and avoid unnecessary abstraction for reliability.
+
+Added: 1/15/26
+Memory Optimization: JSON & Serialization
+Constraint: To conserve Heap RAM, avoid importing the standard `json` library for simple data serialization.
+
+Guideline:
+When generating JSON for API responses (e.g., in `register_routes`), prefer manual String Formatting over `json.dumps()`. The `json` module introduces significant overhead (parser, serializer, object overhead) that is unnecessary for simple, flat data structures like sensor readings.
+
+Implementation Pattern:
+Use the `.format()` method. Note that JSON curly braces must be escaped by doubling them (`{{` and `}}`).
+
+❌ DO NOT USE (Heavy):
+import json
+# Consumes ~4KB RAM just to load the module
+return json.dumps({"co2": 400, "temp": 24.5})
+
+✅ PREFERRED (Lightweight):
+# Uses 0 extra RAM (uses built-in string core)
+# Note: Double braces {{ }} escape the character to print literal braces
+return '{{"co2": {}, "temp": {}}}'.format(400, 24.5)
+
+*Note: This optimization applies only to serializing (sending) data. If you need to parse complex incoming JSON from a POST request, importing `json` is acceptable if manual parsing would be fragile.*
 
 License
 MIT License

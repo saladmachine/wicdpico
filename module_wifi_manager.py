@@ -1,6 +1,5 @@
 # module_wifi_manager.py
 import time
-import json
 import wifi
 from module_base import WicdpicoModule
 from adafruit_httpserver import Request, Response
@@ -10,7 +9,8 @@ class WifiManagerModule(WicdpicoModule):
     Manages the Wi-Fi hotspot timeout feature with a countdown display.
     """
     def __init__(self, foundation):
-        super().__init__(foundation)
+        super().__init__()
+        self.foundation = foundation
         self.name = "WiFi Manager"
         self.version = "v1.1" # Version updated for new feature
         
@@ -81,11 +81,14 @@ class WifiManagerModule(WicdpicoModule):
         elapsed = now - self.last_activity_time
         time_remaining = max(0, self.timeout_seconds - elapsed)
 
-        status = {
-            "timeout_disabled": self.timeout_disabled,
-            "time_remaining": int(time_remaining)
-        }
-        return Response(request, json.dumps(status), content_type="application/json")
+        # Optimization: Manual JSON construction to avoid importing json library
+        # Format: {"timeout_disabled": bool, "time_remaining": int}
+        # Note: JSON requires lowercase 'true'/'false' for booleans
+        json_bool = "true" if self.timeout_disabled else "false"
+        json_str = '{{"timeout_disabled": {}, "time_remaining": {}}}'.format(
+            json_bool, int(time_remaining)
+        )
+        return Response(request, json_str, content_type="application/json")
         
     def get_dashboard_html(self):
         """Returns the HTML card for the Wi-Fi Hotspot Timeout controls."""

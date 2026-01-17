@@ -1,22 +1,21 @@
 # module_rtc.py
 import time
-import json
 from module_base import WicdpicoModule
 from adafruit_httpserver import Request, Response
 from adafruit_pcf8523.pcf8523 import PCF8523
 
-
 class RTCModule(WicdpicoModule):
     """
     RTC Control Module that provides time exclusively in UTC for logging stability.
-    This version focuses on setting the time accurately based on the configured base offset (-5).
+    Includes Heartbeat UI for reliable client-side time.
     """
     
     def __init__(self, foundation):
         """Initializes the RTC using the foundation's shared I2C bus."""
-        super().__init__(foundation)
-        self.name = "RTC Control"
-        self.version = "v1.10 (Setter Enforced)"
+        super().__init__()
+        self.foundation = foundation
+        self.name = "RTC Clock"
+        self.version = "v2.0 (Heartbeat)"
         self.rtc_available = False
 
         self.base_offset_hours = self.foundation.config.TIMEZONE_OFFSET_HOURS
@@ -62,7 +61,7 @@ class RTCModule(WicdpicoModule):
         """
         utc_struct = self._get_utc_time_struct()
         if utc_struct is None:
-            return "N/A"
+            return "1970-01-01T00:00:00Z"
             
         try:
             # Format: YYYY-MM-DDTHH:MM:SSZ (The standard ISO 8601 UTC format)
@@ -76,8 +75,7 @@ class RTCModule(WicdpicoModule):
             )
         except Exception as e:
             self.foundation.startup_print("FATAL RTC Formatting Error: {}".format(e))
-            return "N/A"
-
+            return "1970-01-01T00:00:00Z"
 
     def get_routes(self):
         return [
@@ -94,52 +92,46 @@ class RTCModule(WicdpicoModule):
         """Return RTC time as UTC timestamp for browser (legacy format)."""
         try:
             if not self.rtc_available:
-                return Response(request, json.dumps({"error": "RTC not available"}), content_type="application/json")
+                return Response(request, '{"error": "RTC not available"}', content_type="application/json")
 
             local_time_struct = self.rtc.datetime
             battery_low = self.rtc.battery_low
             local_timestamp = time.mktime(local_time_struct)
 
-            # Convert local time (RTC) to UTC for browser
+            # Convert to UTC for browser
             utc_timestamp = local_timestamp - self.base_offset_seconds 
             
-            # Note: The manual -3600 correction was removed in v1.9, which is correct, 
-            # and should allow the display to be accurate now that the set-time is fixed.
-
-            status = {
-                "timestamp": utc_timestamp,
-                "battery_low": battery_low
-            }
-            return Response(request, json.dumps(status), content_type="application/json")
+            # JSON-free string construction
+            json_response = '{{"timestamp": {}, "battery_low": {}}}'.format(
+                int(utc_timestamp), 
+                "true" if battery_low else "false"
+            )
+            return Response(request, json_response, content_type="application/json")
 
         except Exception as e:
-            return Response(request, json.dumps({"error": "Error reading RTC: {}".format(e)}), content_type="application/json")
+            return Response(request, '{{"error": "{}"}}'.format(str(e)), content_type="application/json")
 
     def rtc_set_time(self, request: Request):
-        """Set RTC time to local time (UTC + offset)."""
         try:
             if not self.rtc_available:
                 return Response(request, "RTC not available", content_type="text/plain")
 
-            data = json.loads(request.body)
-            utc_timestamp = int(data['timestamp'])
+            # Parse simple JSON body manually: {"timestamp": 123456789}
+            body = request.body.decode('utf-8')
+            # Extract numbers only
+            import re
+            match = re.search(r'\d+', body)
+            if not match:
+                 return Response(request, "Error: Invalid timestamp", content_type="text/plain")
+                 
+            utc_timestamp = int(match.group(0))
             
             # CRITICAL FIX: Ensure the time is set using the CORRECT base offset (-5)
-            # The local time stored on the chip will now be the correct Standard Time.
             local_timestamp = utc_timestamp + self.base_offset_seconds
             new_time = time.localtime(local_timestamp)
             self.rtc.datetime = new_time
 
-            # Display only UTC for browser feedback (using localtime() as gmtime() replacement)
-            utc_time_struct = time.localtime(utc_timestamp) 
-            formatted_time = "{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d} UTC".format(
-                utc_time_struct.tm_year,
-                utc_time_struct.tm_mon,
-                utc_time_struct.tm_mday,
-                utc_time_struct.tm_hour,
-                utc_time_struct.tm_min,
-                utc_time_struct.tm_sec
-            )
+            formatted_time = self.get_formatted_utc_time()
             success_msg = "RTC time set. UTC: {}".format(formatted_time)
             return Response(request, success_msg, content_type="text/plain")
 
@@ -149,85 +141,111 @@ class RTCModule(WicdpicoModule):
 
     def get_dashboard_html(self):
         """Generates the HTML dashboard widget for RTC control."""
+        
+        # Initial status
+        clock_state = "Connecting..."
+        
         return """
         <div class="module">
-            <h2>RTC Control {version}</h2>
-            <div class="control-group">
-                <button id="rtc-status-btn" onclick="getRTCStatus()">Get RTC Status</button>
-                <button id="rtc-set-time-btn" onclick="setRTCTime()">Set Time from Browser</button>
+            <h2>System Clock</h2>
+            <div style="font-family: monospace; font-size: 1.8em; text-align: center; margin: 10px 0; padding: 10px; background: #eee; border-radius: 4px;">
+                <span id="rtc-clock">--:--:--</span>
+                <div id="rtc-date" style="font-size: 0.4em; color: #666;">--</div>
             </div>
-            <p id="rtc-display-status">RTC Status: Click button</p>
-            <p id="rtc-set-status"></p>
+            
+            <div style="text-align: center; margin-bottom: 10px;">
+                <span id="rtc-heartbeat" style="font-size: 0.8em; color:orange;">● Syncing...</span>
+            </div>
+
+            <div class="control-group">
+                <button id="rtc-sync-btn" onclick="syncBrowserTime()">Sync to Browser Time</button>
+            </div>
         </div>
         <script>
-        function getRTCStatus() {{
-            const btn = document.getElementById('rtc-status-btn');
-            const displayEl = document.getElementById('rtc-display-status');
-            btn.disabled = true;
-            btn.textContent = 'Reading...';
+        let serverOffsetSeconds = 0;
+        let lastSyncTime = 0;
+        let heartbeatInterval = null;
 
+        // Formats a date object to HH:MM:SS
+        function formatTime(date) {{
+            return date.toLocaleTimeString('en-GB'); // 24-hour format
+        }}
+
+        // Updates the visual clock every second based on local time + offset
+        function updateClock() {{
+            const now = new Date();
+            // serverTime = localTime + offset
+            const serverTime = new Date(now.getTime() + (serverOffsetSeconds * 1000));
+            
+            document.getElementById('rtc-clock').textContent = formatTime(serverTime);
+            document.getElementById('rtc-date').textContent = serverTime.toLocaleDateString();
+        }}
+
+        // The Heartbeat: Pings the server to check connectivity and update offset
+        function doHeartbeat() {{
+            const hb = document.getElementById('rtc-heartbeat');
+            hb.style.color = 'orange'; // Pinging
+            
+            const reqStart = Date.now();
+            
             fetch('/rtc-status', {{ method: 'POST' }})
                 .then(r => r.json())
                 .then(data => {{
                     if(data.error) {{
-                        displayEl.innerHTML = "RTC Status: <br>Error: " + data.error;
+                        hb.textContent = "● Error: " + data.error;
+                        hb.style.color = 'red';
                         return;
                     }}
-                    // Interpret as local time in browser (it is sent as UTC)
-                    const dt = new Date(data.timestamp * 1000);
-                    const options = {{
-                        year: 'numeric', month: 'numeric', day: 'numeric',
-                        hour: 'numeric', minute: '2-digit', second: '2-digit', hour12: true
-                    }};
-                    const formattedTime = dt.toLocaleString(undefined, options);
-                    const batteryStatus = data.battery_low ? "Low" : "OK";
-                    displayEl.innerHTML = "RTC Status: <br>Time: " + formattedTime + "<br>Battery: " + batteryStatus;
+                    
+                    const reqEnd = Date.now();
+                    const latency = (reqEnd - reqStart) / 2; // Est. one-way trip
+                    
+                    // data.timestamp is UTC seconds from Pico
+                    // We compare it to browser UTC to find the offset
+                    const serverTimeMs = data.timestamp * 1000;
+                    const browserTimeMs = Date.now(); // UTC
+                    
+                    // Improve offset calculation
+                    // Ideally we just want the clock to match the server
+                    // serverOffset = serverTime - browserTime
+                    serverOffsetSeconds = (serverTimeMs - browserTimeMs) / 1000;
+
+                    hb.textContent = "● Connected (Battery: " + (data.battery_low ? "LOW" : "OK") + ")";
+                    hb.style.color = 'green';
                 }})
                 .catch(err => {{
-                    displayEl.textContent = 'Error: ' + err.message;
-                }})
-                .finally(() => {{
-                    btn.disabled = false;
-                    btn.textContent = 'Get RTC Status';
+                    hb.textContent = "● Offline";
+                    hb.style.color = 'red';
                 }});
         }}
-        function setRTCTime() {{
-            const btn = document.getElementById('rtc-set-time-btn');
-            const statusEl = document.getElementById('rtc-set-status');
+
+        function syncBrowserTime() {{
+            const btn = document.getElementById('rtc-sync-btn');
             btn.disabled = true;
-            btn.textContent = 'Setting...';
-
-            // This is UTC seconds since epoch
-            const utc_timestamp = Math.floor(new Date().getTime() / 1000);
-
+            btn.textContent = 'Syncing...';
+            
+            // Send current browser UTC time
+            const utc_timestamp = Math.floor(Date.now() / 1000);
+            
             fetch('/rtc-set-time', {{
                 method: 'POST',
-                headers: {{ 'Content-Type': 'application/json' }},
+                headers: {{ 'Content-Type': 'application/json' }},  // Technically sending JSON string
                 body: JSON.stringify({{ timestamp: utc_timestamp }})
             }})
-                .then(r => r.text())
-                .then(result => {{
-                    statusEl.textContent = result;
-                    statusEl.style.color = 'green';
-                    getRTCStatus();
-                }})
-                .catch(err => {{
-                    statusEl.textContent = 'Error: ' + err.message;
-                }})
-                .finally(() => {{
-                    btn.disabled = false;
-                    btn.textContent = 'Set Time from Browser';
-                }});
+            .then(r => r.text())
+            .then(msg => {{
+                alert(msg);
+                doHeartbeat(); // Refresh immediately
+            }})
+            .finally(() => {{
+                btn.disabled = false;
+                btn.textContent = 'Sync to Browser Time';
+            }});
         }}
+
+        // Init
+        setInterval(updateClock, 1000); // Visual tick every 1s
+        setInterval(doHeartbeat, 10000); // 10s Heartbeat
+        doHeartbeat(); // Initial ping
         </script>
         """.format(version=self.version)
-
-    @property
-    def current_time(self):
-        # Deprecated: Other modules should use get_formatted_utc_time()
-        if self.rtc_available:
-            try:
-                return self.rtc.datetime
-            except Exception:
-                return None
-        return None

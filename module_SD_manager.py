@@ -18,7 +18,8 @@ def url_unquote(s):
 
 class SDManagerModule(WicdpicoModule):
     def __init__(self, foundation):
-        super().__init__(foundation)
+        super().__init__()
+        self.foundation = foundation
         self.name = "SD Manager"
         self.version = "v4.2 (Final)"
         self.path = "/files"
@@ -37,10 +38,10 @@ class SDManagerModule(WicdpicoModule):
 
     def _detect_and_mount_card(self):
         try:
-            # Assumes PicoBell Adalogger SPI mounting: GP18=SCK, GP19=MOSI, GP16=MISO, GP17=CS
             spi = busio.SPI(board.GP18, board.GP19, board.GP16)
             cs = digitalio.DigitalInOut(board.GP17)
-            sdcard = adafruit_sdcard.SDCard(spi, cs)
+            # Reduce baudrate to 1MHz for better stability with some cards
+            sdcard = adafruit_sdcard.SDCard(spi, cs, baudrate=1000000)
             vfs = storage.VfsFat(sdcard)
             
             try:

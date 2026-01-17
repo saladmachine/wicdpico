@@ -7,12 +7,10 @@ import adafruit_scd4x
 from module_base import WicdpicoModule
 from adafruit_httpserver import Request, Response
 
-class SCD41Module(WicdpicoModule):
-    def __init__(self, foundation):
-        super().__init__(foundation)
+    def __init__(self, i2c_bus):
+        super().__init__()
         self.name = "SCD41 CO2 Sensor"
-        self.foundation = foundation
-        self.i2c = self.foundation.i2c  # Access the shared I2C bus from foundation, as with RTC
+        self.i2c = i2c_bus
         self.scd41 = None
         self.sensor_available = False
         self.last_reading_time = 0
@@ -23,13 +21,12 @@ class SCD41Module(WicdpicoModule):
         self.status_message = "Initializing..."
         self.last_error = None
         self._initialize_sensor()
-        # FIX 1: F-string in startup_print converted
-        self.foundation.startup_print("SCD41 module created. Status: '{}'".format(self.status_message))
+        print("SCD41 module created. Status: '{}'".format(self.status_message))
 
     def _initialize_sensor(self):
         if not self.i2c:
             self.status_message = "Error: I2C Not Available"
-            self.last_error = "Foundation failed to provide I2C bus."
+            self.last_error = "I2C bus provided to CD41 module is None."
             self.sensor_available = False
             return
         try:
@@ -90,7 +87,7 @@ class SCD41Module(WicdpicoModule):
                 error_msg = result_dict.get('error', 'Unknown error')
                 # FIX 6: F-string converted
                 return Response(request, "Failed: {}".format(error_msg), content_type="text/plain")
-        self.foundation.startup_print("SCD41 route '/scd41/read' registered.")
+        print("SCD41 route '/scd41/read' registered.")
 
     def get_dashboard_html(self):
         status_color = "#28a745" if self.sensor_available else "#dc3545"
