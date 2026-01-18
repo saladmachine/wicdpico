@@ -20,6 +20,7 @@ from module_SD_manager import SDManagerModule
 from module_rtc import RTCModule
 from module_datalogger import DataloggerModule
 from module_live_chart import LiveChartModule
+from module_battery_monitor import BatteryMonitorModule
 
 def main():
     print("--- WicdAir System Starting ---")
@@ -56,6 +57,9 @@ def main():
     
     # Live Chart (Zero-risk visualizer)
     live_chart = LiveChartModule()
+
+    # Battery Monitor (Hardware verified)
+    battery_monitor = BatteryMonitorModule(foundation)
     
     # 4. Register Modules with Foundation
     # The order here determines the order on the dashboard
@@ -65,6 +69,7 @@ def main():
     foundation.register_module("scd30", scd30)
     foundation.register_module("sd_manager", sd_manager)
     foundation.register_module("live_chart", live_chart)
+    foundation.register_module("battery", battery_monitor)
         
     # 5. Start Server
     foundation.start_server()

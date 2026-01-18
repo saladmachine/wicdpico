@@ -11,11 +11,12 @@ class BatteryMonitorModule(WicdpicoModule):
     Battery Monitor Module for WicdPico system.
     Detects USB/Battery transitions, logs events, and provides dashboard controls.
     """
-    USB_THRESHOLD = 4.4
+    USB_THRESHOLD = 4.3
     BATTERY_THRESHOLD = 4.2
 
     def __init__(self, foundation):
-        super().__init__(foundation)
+        super().__init__()
+        self.foundation = foundation
         self.name = "Battery Monitor"
         self.version = "v4.0"
         self.power_state = "UNKNOWN"
