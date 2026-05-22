@@ -4,6 +4,8 @@
 
 WicdPico is a modular platform for building I2C, SPI, and GPIO sensor and actuator instrumentation and control devices that serve interactive web dashboards. Suitable for environmental monitoring, data logging, and laboratory instrumentation, all accessible with a browser.
 
+5/22/26 Published in SoftwareX https://www.sciencedirect.com/science/article/pii/S2352711026002190 
+
 ## Key Features
 
 **Standalone Operation** — Creates its own WiFi hotspot (no network required)\
